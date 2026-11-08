@@ -44,5 +44,5 @@ O comando remove os objetos e executáveis gerados pelo projeto, além dos objet
 
 ## Mais informações
 
-- [Arquitetura e módulos](docs/architecture.md)
+- [Arquitetura e módulos](docs/arquitetura.md)
 - [Orientações para agentes](AGENTS.md)

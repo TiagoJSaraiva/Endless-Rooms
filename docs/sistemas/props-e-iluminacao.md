@@ -72,7 +72,7 @@ remove antes da atualização e ignora seu desenho e dano mesmo antes do
 próximo tick. Isso cobre golpes, estocadas, ataques circulares, lasers e
 exibições de arma; munições independentes continuam seu trajeto. O jogador
 pode omitir o marcador enquanto sua posição permanecer válida até limpar
-os ataques. Consulte [Diagnóstico de crashes](crash-diagnostics.md).
+os ataques. Consulte [Diagnóstico de crashes](diagnostico-de-crashes.md).
 
 ## Iluminação
 

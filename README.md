@@ -15,6 +15,6 @@ Para forçar o bioma das salas geradas em uma run, crie `game/biome.txt` com `ca
 ## Sobre o projeto
 
 - Código do jogo e assets: `game/`
-- Organização dos módulos: [docs/architecture.md](docs/architecture.md)
+- Organização dos módulos: [docs/arquitetura.md](docs/arquitetura.md)
 - Orientações para agentes de desenvolvimento: [AGENTS.md](AGENTS.md)
 - Convenção dos sprites de chão: [game/assets/floor/README.md](game/assets/floor/README.md)
