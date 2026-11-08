@@ -1,3 +1,6 @@
 .~lock.Relatorio Projeto Raylib CJOPOO.docx#
 anotacoes/
 /game/biome.txt
+
+# Configuração local do Claude Code
+.claude/settings.local.json
