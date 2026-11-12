@@ -15,6 +15,7 @@ AGENTS.md, CLAUDE.md    instruções para agentes
 .agents/fluxos/         fluxos inicio / planejar / revisar / fim
 .claude/                comandos e hook do Claude Code
 scripts/                check.ps1 (verificação) e check-toolchain.ps1
+tools/sprites/          geradores de sprites (Python/Pillow; regeneram os PNGs de game/assets/)
 docs/                   memória do projeto (este arquivo, status, sistemas, decisões)
 anotacoes/              notas pessoais, ignoradas pelo Git
 game/
