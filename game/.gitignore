@@ -25,3 +25,4 @@
 /tests/lighting_rules_tests
 /tests/run_stats_tests
 /tests/projectile_wall_tests
+/tests/enemy_rules_tests
