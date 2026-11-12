@@ -25,9 +25,8 @@ void CheckGeneratedWorld(std::uint64_t seed) {
         if (room.GetType() == RoomType::Lobby) {
             assert(room.GetBiome() == BiomeType::Lobby);
         } else {
-            assert(room.GetBiome() == BiomeType::Cave ||
-                   room.GetBiome() == BiomeType::Mansion ||
-                   room.GetBiome() == BiomeType::Dungeon);
+            // Caverna e mansão estão congeladas na demo: o sorteio só produz dungeon.
+            assert(room.GetBiome() == BiomeType::Dungeon);
             if (selectedBiome == BiomeType::Unknown) {
                 selectedBiome = room.GetBiome();
             } else {

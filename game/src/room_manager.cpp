@@ -13,6 +13,7 @@
 
 #include "room_types.h"
 #include "chest.h"
+#include "biome_config.h"
 
 // Responsável por gerar salas vizinhas, configurar portas e recursos especiais.
 namespace {
@@ -833,15 +834,10 @@ BiomeType RoomManager::PickInitialBiome() {
         return *initialBiomeOverride_;
     }
 
-    static constexpr std::array<BiomeType, 3> kAvailableBiomes{
-        BiomeType::Cave,
-        BiomeType::Mansion,
-        BiomeType::Dungeon
-    };
-
+    const std::vector<BiomeType>& availableBiomes = BiomeConfig::RandomBiomes();
     std::mt19937_64 rng(MakeRoomSeed(worldSeed_, RoomCoords{0, 0}, 0xB10B1EULL));
-    std::uniform_int_distribution<std::size_t> dist(0, kAvailableBiomes.size() - 1);
-    return kAvailableBiomes[dist(rng)];
+    std::uniform_int_distribution<std::size_t> dist(0, availableBiomes.size() - 1);
+    return availableBiomes[dist(rng)];
 }
 
 // Verifica se o retângulo proposto para nova sala colide com salas existentes.

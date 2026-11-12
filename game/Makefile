@@ -421,7 +421,7 @@ REWARD_POUCH_RENDER_SOURCES = src/reward_pouch.cpp src/reward_pouch_renderer.cpp
 $(REWARD_POUCH_RENDER_TEST_BIN): tests/reward_pouch_render_tests.cpp $(REWARD_POUCH_RENDER_SOURCES) $(wildcard src/*.h) raylib_build
 	$(CC) -o $@ tests/reward_pouch_render_tests.cpp $(REWARD_POUCH_RENDER_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
-PROP_RULES_SOURCES = src/prop.cpp src/prop_rules.cpp src/room.cpp src/room_collision_rules.cpp src/room_manager.cpp src/room_features.cpp src/chest.cpp $(WALL_PROP_RULES_SOURCES)
+PROP_RULES_SOURCES = src/prop.cpp src/prop_rules.cpp src/room.cpp src/room_collision_rules.cpp src/room_manager.cpp src/room_features.cpp src/biome_config.cpp src/chest.cpp $(WALL_PROP_RULES_SOURCES)
 
 $(WALL_PROP_RULES_TEST_BIN): tests/wall_prop_rules_tests.cpp $(WALL_PROP_RULES_SOURCES) src/room.cpp $(wildcard src/*.h)
 	$(CC) -o $@ tests/wall_prop_rules_tests.cpp $(WALL_PROP_RULES_SOURCES) src/room.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
