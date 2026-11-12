@@ -5,6 +5,8 @@
 #include "wall_prop_renderer.h"
 #include "reward_pouch_operations.h"
 #include "reward_pouch_renderer.h"
+#include "run_stats.h"
+#include "ui_run_summary.h"
 #include "raylib.h"
 #include "raymath.h"
 
@@ -244,46 +246,6 @@ bool TryActivateEquipmentAbility(InventoryUIState& state, PlayerCharacter& playe
         SetEquipmentSlot(state, slotIndex, 0);
     }
     return true;
-}
-
-// Desenha a tela de morte e retorna true se o jogador clicou no botão de reinício.
-// Exibe painel de game over e checa clique do mouse no botão "Recomeçar".
-bool DrawDeathOverlay() {
-    const int screenWidth = GetScreenWidth();
-    const int screenHeight = GetScreenHeight();
-    DrawRectangle(0, 0, screenWidth, screenHeight, Color{8, 10, 16, 180});
-
-    const Font& font = GetGameFont();
-    const char* title = "Voce perdeu!";
-    const float titleSize = 62.0f;
-    Vector2 titleMeasure = MeasureTextEx(font, title, titleSize, 0.0f);
-    Vector2 titlePos{
-        screenWidth * 0.5f - titleMeasure.x * 0.5f,
-        screenHeight * 0.35f - titleMeasure.y * 0.5f
-    };
-    DrawTextEx(font, title, titlePos, titleSize, 0.0f, Color{230, 70, 70, 255});
-
-    Rectangle buttonRect{
-        screenWidth * 0.5f - 150.0f,
-        titlePos.y + titleMeasure.y + 40.0f,
-        300.0f,
-        70.0f
-    };
-    Vector2 mouse = GetMousePosition();
-    bool hovered = CheckCollisionPointRec(mouse, buttonRect);
-    Color buttonColor = hovered ? Color{220, 70, 70, 255} : Color{150, 34, 34, 245};
-    DrawRectangleRec(buttonRect, buttonColor);
-    DrawRectangleLinesEx(buttonRect, 2.0f, Color{255, 255, 255, 255});
-
-    const char* buttonLabel = "Recomecar";
-    const float buttonFont = 32.0f;
-    Vector2 labelMeasure = MeasureTextEx(font, buttonLabel, buttonFont, 0.0f);
-    Vector2 labelPos{
-        buttonRect.x + (buttonRect.width - labelMeasure.x) * 0.5f,
-        buttonRect.y + (buttonRect.height - labelMeasure.y) * 0.5f
-    };
-    DrawTextEx(font, buttonLabel, labelPos, buttonFont, 0.0f, Color{255, 255, 255, 255});
-    return hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
 }
 
 // Calcula o alfa de visibilidade de uma porta conforme estado de abertura/fechamento.
@@ -1175,6 +1137,9 @@ int main() {
 
     bool playerIsMoving = false;
     bool playerDead = false;
+    RunStats runStats;
+    int runVisitedRooms = 0;
+    std::vector<RunSummaryItemLine> runItemLines;
 
     // Reseta completamente o estado da run, com opção de gerar nova seed procedural.
     auto BeginNewRun = [&](bool regenerateSeed) {
@@ -1237,6 +1202,9 @@ int main() {
         player.currentHealth = player.derivedStats.maxHealth;
         playerIsMoving = false;
         playerDead = false;
+        runStats = RunStats{};
+        runVisitedRooms = 0;
+        runItemLines.clear();
         camera.target = playerPosition;
         camera.zoom = 1.0f;
 
@@ -1252,6 +1220,9 @@ int main() {
     while (!WindowShouldClose()) {
         const float delta = GetFrameTime();
         propAnimationTime += delta;
+        if (!playerDead) {
+            RunStatsRules::AddTime(runStats, delta);
+        }
         UpdateEquipmentAbilityCooldowns(inventoryUI, delta);
 
         bool shiftHeld = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
@@ -1577,6 +1548,7 @@ int main() {
                         }
 
                         if (died) {
+                            RunStatsRules::AddEnemyDefeated(runStats);
                             break;
                         }
                     }
@@ -1645,6 +1617,17 @@ int main() {
             player.currentHealth = 0.0f;
             playerDead = true;
             playerIsMoving = false;
+            // Congela o resumo no momento da morte; o desenho só lê esses dados.
+            std::vector<const Room*> allRooms;
+            allRooms.reserve(roomManager.Rooms().size());
+            for (const auto& entry : roomManager.Rooms()) {
+                allRooms.push_back(entry.second.get());
+            }
+            runVisitedRooms = RunStatsRules::CountVisitedRooms(allRooms);
+            runItemLines = RunStatsRules::BuildItemLines(runStats, [&](int itemId) -> const char* {
+                const ItemDefinition* definition = GetItemDefinition(inventoryUI, itemId);
+                return definition != nullptr ? definition->name.c_str() : nullptr;
+            });
             SaveActiveStations(inventoryUI, roomManager);
             inventoryUI.open = false;
             inventoryUI.mode = InventoryViewMode::Inventory;
@@ -1683,6 +1666,7 @@ int main() {
                                                             inventoryUI, !playerDead, debugInputBlocked);
         int pickupLine = 0;
         for (const auto& pickup : pickups) {
+            RunStatsRules::AddCollection(runStats, pickup.coins, pickup.items);
             auto showReward = [&](const std::string& text) {
                 DamageNumber number;
                 number.position = {playerPosition.x, playerPosition.y - 40.0f - 24.0f * pickupLine++};
@@ -2358,8 +2342,8 @@ int main() {
 
         bool restartRequested = false;
         if (playerDead) {
-            // Quando morto, desenha overlay e captura clique para reiniciar.
-            restartRequested = DrawDeathOverlay();
+            // Quando morto, mostra o resumo da run e captura o clique de retorno ao lobby.
+            restartRequested = DrawRunSummary(runStats, runVisitedRooms, runItemLines);
         }
 
         // Persiste conteúdo de forjas/lojas/baús caso jogador saia abruptamente com Alt+F4.
