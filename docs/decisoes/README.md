@@ -13,6 +13,7 @@ Decisão aceita não é editada para mudar de ideia: crie uma nova e marque a an
 | [0006](0006-testes-sem-framework.md) | Testes sem framework, um executável por domínio |
 | [0007](0007-regras-operacoes-renderizacao.md) | Separar regras, operações e renderização |
 | [0008](0008-commits-pelo-agente.md) | Commits feitos pelo agente, por módulo, na main |
+| [0009](0009-escuridao-em-tela-cheia.md) | Escuridão como filtro de tela cheia |
 
 Modelo:
 
