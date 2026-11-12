@@ -22,3 +22,4 @@
 /tests/wall_prop_rules_tests
 /tests/wall_prop_render_tests
 /tests/projectile_lifetime_tests
+/tests/lighting_rules_tests
