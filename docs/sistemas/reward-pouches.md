@@ -18,7 +18,7 @@ de itens, tamanho da hitbox e largura de desenho. IDs de materiais já existente
 | `big` | 48–72 | 100% de 2–3 tiras de couro; 50% de 1–2 lingotes de bronze |
 
 As chances de drop ficam em `EnemyConfig::rewardPouchDrops`, declaradas por
-tipo em `enemy_spawner.cpp`, e em `DestructibleProp::rewardPouchDrops`, no catálogo
+tipo em `enemy_spawner.cpp` (os inimigos da Dungeon vêm de `enemy_rules.cpp`), e em `DestructibleProp::rewardPouchDrops`, no catálogo
 de `prop.cpp`. São percentuais inteiros, absolutos, com soma máxima de 100;
 o restante significa nenhum drop. Tabelas vazias ou inválidas não geram bolsas.
 Uma única seleção cumulativa escolhe o tipo; os tipos não são sorteados de
@@ -27,7 +27,9 @@ forma independente.
 | Origem | small | medium | big | Nada |
 |---|---:|---:|---:|---:|
 | Caverna, melee e ranged | 60% | 10% | 0% | 30% |
-| Dungeon, melee e ranged | 50% | 20% | 5% | 25% |
+| Dungeon, Victim | 35% | 5% | 0% | 60% |
+| Dungeon, Guard | 35% | 20% | 0% | 45% |
+| Dungeon, Executioner | 0% | 40% | 40% | 20% |
 | Mansão, melee e ranged | 40% | 30% | 10% | 20% |
 | Vaso | 20% | 0% | 0% | 80% |
 
