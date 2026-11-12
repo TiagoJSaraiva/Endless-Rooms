@@ -7,6 +7,7 @@ Uma nota por sistema, criada quando o sistema passa a existir ou ganha regras qu
 | [props-e-iluminacao.md](props-e-iluminacao.md) | Props de chão, catálogo, geração e iluminação |
 | [reward-pouches.md](reward-pouches.md) | Bolsas de recompensa: pools, drops e coleta |
 | [colisao-de-salas.md](colisao-de-salas.md) | Limite inferior das salas e navegação junto à borda |
+| [fim-de-run.md](fim-de-run.md) | Estatísticas da run e tela de resumo ao morrer |
 | [diagnostico-de-crashes.md](diagnostico-de-crashes.md) | Validade de donos de projéteis e cache de wall props |
 
 Modelo:

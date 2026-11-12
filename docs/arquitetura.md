@@ -37,7 +37,7 @@ game/
 | Jogador e combate | `player` guarda atributos; `enemy`, `enemy_common` e `enemy_spawner` cuidam dos inimigos; `projectile` coordena ciclo de vida e criação; `projectile_melee` e `projectile_ranged` implementam as famílias (contratos internos em `projectile_internal.h`); `combat_geometry` fornece interseções e trajetos; `weapon`/`weapon_blueprints` definem as armas. |
 | Recompensas | `reward_pouch` declara pools e isola sorteios; `reward_pouch_operations` integra mortes/destruição ao spawn e entrega recompensas; `reward_pouch_renderer` administra texturas e desenho. |
 | Inventário | `inventory_rules` contém políticas de categorias, pilhas e preços; `inventory_operations` manipula slots e armazenamento; `ui_inventory` liga essas operações aos controles e desenha as telas de inventário, loja, forja e baú. |
-| Interface e recursos | `hud` desenha informações de jogo; `font_manager` administra a fonte; `chest` define os tipos de armazenamento; `debug_console` implementa comandos de depuração. |
+| Interface e recursos | `hud` desenha informações de jogo; `font_manager` administra a fonte; `chest` define os tipos de armazenamento; `debug_console` implementa comandos de depuração; `run_stats` acumula as estatísticas da run (regras puras) e `ui_run_summary` desenha o resumo de fim de run. |
 | Integração | `main.cpp` conecta os módulos e processa o ciclo do jogo; `station_persistence` sincroniza forjas e lojas entre UI e salas. |
 
 Notas detalhadas por sistema ficam em [`sistemas/`](sistemas/README.md).
