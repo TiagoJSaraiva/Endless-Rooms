@@ -567,6 +567,9 @@ clean:
 	@cmd /C "if exist tests\run_stats_tests$(EXT) del /Q tests\run_stats_tests$(EXT)"
 	@cmd /C "if exist tests\debug_config_tests$(EXT) del /Q tests\debug_config_tests$(EXT)"
 	@cmd /C "if exist tests\economy_tests$(EXT) del /Q tests\economy_tests$(EXT)"
+	@cmd /C "if exist tests\weapon_rules_tests$(EXT) del /Q tests\weapon_rules_tests$(EXT)"
+	@cmd /C "if exist tests\room_simulation_tests$(EXT) del /Q tests\room_simulation_tests$(EXT)"
+	@cmd /C "if exist tests\enemy_rules_tests$(EXT) del /Q tests\enemy_rules_tests$(EXT)"
 	@echo Cleaning project build outputs
 else
 clean:
