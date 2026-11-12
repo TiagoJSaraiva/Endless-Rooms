@@ -57,7 +57,6 @@ struct ItemDefinition {
     ItemCategory category{ItemCategory::None};
     std::string description;
     int rarity{1};
-    int baseValue{0};
     int value{0};
     bool debugOnly{false}; // Só existe no modo debug (debug.txt): fora dele não entra em loja, baú nem equipamento inicial
     const WeaponBlueprint* weaponBlueprint{nullptr};
@@ -99,7 +98,7 @@ struct InventoryUIState {
     int coins{125};
     int shopRollsLeft{1};
     bool debugMode{false}; // Modo debug da run (debug.txt); define se itens debugOnly entram nos pools
-    float sellPriceMultiplier{0.2f}; // Base sell multiplier; meta progression can scale this later
+    float sellPriceMultiplier{0.3f}; // Multiplicador base de venda (InventoryRules::kBaseSellMultiplier); meta-progressão pode escalar depois
     bool forgeEditingCost{false};
     std::array<int, 2> forgeInputIds{0, 0};
     std::array<std::string, 2> forgeInputNames{};

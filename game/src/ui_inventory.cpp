@@ -870,8 +870,7 @@ void RollShopInventoryInternal(InventoryUIState& state, ShopInstance* shop = nul
 
         int itemIndex = availableIndices[pickIndex];
         const ItemDefinition& def = state.items[itemIndex];
-        int price = static_cast<int>(std::round(def.value * 1.3f));
-        int finalPrice = (price <= 0) ? def.value : price;
+        int finalPrice = InventoryRules::BuyPrice(def.value);
         int stock = kDefaultShopStock;
         if (def.category == ItemCategory::Consumable) {
             if (useShopRng) {
@@ -1013,9 +1012,7 @@ int CalculateSaleValue(const InventoryUIState& state, int itemId, int quantity =
     if (def == nullptr || def->value <= 0) {
         return 0;
     }
-    float multiplier = std::max(0.0f, state.sellPriceMultiplier);
-    float totalValue = static_cast<float>(def->value) * static_cast<float>(quantity) * multiplier;
-    return static_cast<int>(std::round(totalValue));
+    return InventoryRules::SaleValue(def->value, quantity, state.sellPriceMultiplier);
 }
 
 constexpr int kMythicRarity = 6;
@@ -2004,7 +2001,7 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
     state.shopPrices.clear();
     state.shopTypes.clear();
     state.shopStock.clear();
-    state.sellPriceMultiplier = 0.2f; // Reset base sell rate when seeding dummy data
+    state.sellPriceMultiplier = InventoryRules::kBaseSellMultiplier; // Reinicia a taxa base de venda a cada run
     state.forgeBaseCost = 0;
     state.forgeSuccessChance = 0.0f;
     state.forgeState = ForgeState::Working;
@@ -2029,7 +2026,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
                        ItemCategory category,
                        const char* description,
                        int rarity,
-                       int baseValue,
                        const WeaponBlueprint* blueprint = nullptr,
                        const PlayerAttributes& bonuses = PlayerAttributes{},
                        const char* spritePath = nullptr,
@@ -2041,8 +2037,7 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         def.category = category;
         def.description = description;
         def.rarity = std::max(1, rarity);
-        def.baseValue = std::max(0, baseValue);
-        def.value = InventoryRules::CalculateItemPrice(def.rarity, def.baseValue);
+        def.value = InventoryRules::ItemValue(def.category, def.rarity);
         def.weaponBlueprint = blueprint;
         def.attributeBonuses = bonuses;
         if (spritePath != nullptr) {
@@ -2056,15 +2051,12 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         state.itemNameToId[name] = id;
     };
 
-    constexpr int kCommonBaseValue = 20;
-    auto commonValue = [&](int delta) { return kCommonBaseValue + std::max(0, delta); };
-
-    addItem(1,  "Espada Curta",        ItemCategory::Weapon,      "Lamina equilibrada para iniciantes.", 2, 80,  &GetEspadaCurtaWeaponBlueprint());
-    addItem(2,  "Machadinha",          ItemCategory::Weapon,      "Machado leve de uma mao.",        2, 70,  &GetMachadinhaWeaponBlueprint());
-    addItem(3,  "Arco Simples",        ItemCategory::Weapon,      "Arco feito de madeira tratada.",  2, 100, &GetArcoSimplesWeaponBlueprint());
-    addItem(4,  "Cajado de Carvalho",  ItemCategory::Weapon,      "Canaliza energia natural.",       3, 100, &GetCajadoDeCarvalhoWeaponBlueprint());
-    addItem(21, "Broquel",             ItemCategory::Weapon,      "Escudo curto reforcado para contra-ataques.", 3, 90, &GetBroquelWeaponBlueprint());
-    addItem(19, "Espada Runica",       ItemCategory::Weapon,      "Lamina encantada pelas runas.",    5, 320, &GetEspadaRunicaWeaponBlueprint());
+    addItem(1,  "Espada Curta",        ItemCategory::Weapon,      "Lamina equilibrada para iniciantes.", 2, &GetEspadaCurtaWeaponBlueprint());
+    addItem(2,  "Machadinha",          ItemCategory::Weapon,      "Machado leve de uma mao.",        2, &GetMachadinhaWeaponBlueprint());
+    addItem(3,  "Arco Simples",        ItemCategory::Weapon,      "Arco feito de madeira tratada.",  2, &GetArcoSimplesWeaponBlueprint());
+    addItem(4,  "Cajado de Carvalho",  ItemCategory::Weapon,      "Canaliza energia natural.",       3, &GetCajadoDeCarvalhoWeaponBlueprint());
+    addItem(21, "Broquel",             ItemCategory::Weapon,      "Escudo curto reforcado para contra-ataques.", 3, &GetBroquelWeaponBlueprint());
+    addItem(19, "Espada Runica",       ItemCategory::Weapon,      "Lamina encantada pelas runas.",    5, &GetEspadaRunicaWeaponBlueprint());
 
     constexpr int kCommonRarity = 1;
     const int idFarrapo = 100;
@@ -2088,7 +2080,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Material,
         "Restos de tecidos gastos e desbotados pelo tempo. Ainda que simples, podem ser costurados novamente e servir como base para algumas vestimentas.",
         kCommonRarity,
-        commonValue(0),
         nullptr,
         PlayerAttributes{},
     "assets/img/itens/Farrapo.png",
@@ -2099,7 +2090,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Material,
         "Um pedaco fino e resistente de couro curtido. Muito util na confeccao de protecoes leves ou para reforcar costuras em equipamentos simples.",
         kCommonRarity,
-        commonValue(0),
         nullptr,
     PlayerAttributes{},
     "assets/img/itens/Tira_de_couro.png",
@@ -2110,7 +2100,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Material,
     "Uma barra solida de bronze fundido. Sua liga equilibrada garante boa durabilidade sem exigir forja avancada - ideal para armas e armaduras simples.",
         kCommonRarity,
-        commonValue(0),
         nullptr,
     PlayerAttributes{},
     "assets/img/itens/Lingote_de_bronze.png",
@@ -2127,7 +2116,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Armor,
         "Equipamento de alta qualidade, usado pra testar jogos que ainda nao estao bem balanceados.",
         5,
-        5,
     nullptr,
     kitDoTestador,
     "assets/img/itens/Kit_do_Testador.png",
@@ -2141,7 +2129,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Armor,
         "Uma veste simples feita de farrapos costurados. Nao oferece protecao, mas e confortavel.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     tunicaBonus,
     "assets/img/itens/Tunica.png",
@@ -2154,7 +2141,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Armor,
         "Botas rudimentares feitas de tecido e couro leve. Melhor do que andar descalco.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     calcadosBonus,
     "assets/img/itens/Calcados_simples.png",
@@ -2168,7 +2154,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Armor,
         "Um elmo basico moldado em bronze. Leve e confiavel.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     elmoBonus,
     "assets/img/itens/Elmo_de_bronze.png",
@@ -2187,7 +2172,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Armor,
         "Uma peca robusta feita de camadas costuradas de couro. Simples, mas eficaz.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     coleteBonus,
     "assets/img/itens/Colete_de_couro.png",
@@ -2201,7 +2185,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Armor,
         "Ombreiras de bronze presas por tiras de couro, garantindo mobilidade sem sacrificar protecao.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     espaldeiraBonus,
     "assets/img/itens/Espaldeira_de_bronze.png",
@@ -2215,7 +2198,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Armor,
         "Um pequeno amuleto de bronze. Diz-se que ajuda a clarear a mente e manter o foco.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     pingenteBonus,
     "assets/img/itens/Pingente_de_bronze.png",
@@ -2229,7 +2211,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Armor,
         "Talisma furtivo que pulsa com magia rubra, facilitando golpes furtivos e esquivas improvaveis.",
         4,
-        120,
         nullptr,
         amuletoSorrateiroBonus,
         "assets/img/itens/Amuleto_do_Sorrateiro.png",
@@ -2243,7 +2224,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Armor,
         "Placas negras que absorvem parte dos impactos, mas sussurram maldicoes antigas ao usuario.",
         4,
-        140,
         nullptr,
         couracaCaidoBonus,
         "assets/img/itens/Couraca_do_caido.png",
@@ -2254,7 +2234,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
         ItemCategory::Consumable,
         "Elixir alquimico de emergencia que restaura uma porcao generosa da vitalidade.",
         1,
-        20,
         nullptr,
         PlayerAttributes{},
         "assets/img/itens/Pocao_de_cura.png",
