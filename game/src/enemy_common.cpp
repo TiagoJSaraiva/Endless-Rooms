@@ -1,5 +1,6 @@
 #include "enemy_common.h"
 
+#include "enemy_attacks.h"
 #include "projectile.h"
 #include "raymath.h"
 #include "room.h"
@@ -22,6 +23,8 @@ std::unordered_map<std::string, CachedEnemyTexture> g_enemyTextureCache;
 constexpr float kHealthBarWidthPadding = 8.0f;
 constexpr float kHealthBarHeight = 2.0f;
 constexpr float kHealthBarVerticalOffset = 80.0f;
+// Folga entre o topo do sprite e a barra de vida dos inimigos com definição própria.
+constexpr float kHealthBarSpriteGap = 6.0f;
 constexpr float kHealthBarBackgroundThickness = 1.0f;
 const Color kHealthBarBackgroundColor = Color{12, 12, 18, 200};
 const Color kHealthBarFillColor = Color{196, 64, 64, 230};
@@ -86,6 +89,16 @@ EnemyCommon::EnemyCommon(const EnemyConfig& config,
                          const EnemySpriteInfo& spriteInfo)
     : Enemy(config), weapon_(weapon), range_(range), spriteInfo_(spriteInfo) {}
 
+EnemyCommon::EnemyCommon(const EnemyConfig& config,
+                         const EnemyRules::EnemyDefinition& definition,
+                         const EnemySpriteInfo& spriteInfo,
+                         float damageMultiplier)
+    : Enemy(config),
+      range_(definition.attack.startRange),
+      spriteInfo_(spriteInfo),
+      definition_(&definition),
+      damageMultiplier_(damageMultiplier) {}
+
 // Carrega texturas de idle/caminhada apenas uma vez.
 void EnemyCommon::EnsureTexturesLoaded() const {
     if (texturesLoaded_) {
@@ -93,6 +106,7 @@ void EnemyCommon::EnsureTexturesLoaded() const {
     }
     idleTexture_ = AcquireEnemyTexture(spriteInfo_.idleSpritePath);
     walkingTexture_ = AcquireEnemyTexture(spriteInfo_.walkingSpriteSheetPath);
+    chargeTexture_ = AcquireEnemyTexture(spriteInfo_.chargeSpritePath);
     texturesLoaded_ = true;
 }
 
@@ -115,6 +129,8 @@ void EnemyCommon::Update(const EnemyUpdateContext& context) {
     }
 
     if (!context.playerInSameRoom || !HasCompletedFade() || !IsAlive()) {
+        // Sem o jogador na sala, um ataque em curso é abandonado (os projéteis já criados seguem).
+        EnemyRules::CancelAttack(attackState_);
         isMoving_ = false;
         UpdateAnimation(delta, false);
         return;
@@ -122,6 +138,11 @@ void EnemyCommon::Update(const EnemyUpdateContext& context) {
 
     Vector2 toPlayer = Vector2Subtract(context.playerPosition, GetPosition());
     float distance = Vector2Length(toPlayer);
+
+    if (definition_ != nullptr) {
+        UpdateDefinedEnemy(context, toPlayer, distance);
+        return;
+    }
 
     bool withinRange = (distance <= range_);
 
@@ -141,6 +162,64 @@ void EnemyCommon::Update(const EnemyUpdateContext& context) {
 
     facingLeft_ = (toPlayer.x < 0.0f);
     UpdateAnimation(delta, isMoving_);
+}
+
+// Persegue o jogador e conduz a máquina de estados de ataque (carga, disparo, intervalo).
+void EnemyCommon::UpdateDefinedEnemy(const EnemyUpdateContext& context, const Vector2& toPlayer, float distance) {
+    const EnemyRules::AttackDefinition& attack = definition_->attack;
+    const float delta = context.deltaSeconds;
+    const RoomLayout& layout = context.room.Layout();
+
+    Vector2 aimDir{1.0f, 0.0f};
+    if (distance > 1e-5f) {
+        aimDir = Vector2Scale(toPlayer, 1.0f / distance);
+    }
+
+    EnemyRules::AttackTick tick = EnemyRules::AdvanceAttack(attackState_, attack, delta, distance <= attack.startRange);
+    // A mira trava ao começar a carga: quem sai da frente a tempo desvia do golpe.
+    if (tick.startedCharge || (tick.fire && attack.chargeSeconds <= 0.0f)) {
+        lockedAim_ = aimDir;
+    }
+    if (tick.fire) {
+        FireDefinedAttack(context);
+    }
+
+    bool chasing = false;
+    if (EnemyRules::CanMove(attackState_, attack)) {
+        const bool attackActive = attackState_.phase == EnemyRules::AttackPhase::Active;
+        const float stopDistance = attackActive ? EnemyRules::kChaseContactDistance : attack.startRange;
+        chasing = distance > stopDistance;
+    }
+
+    if (chasing) {
+        Vector2 before = GetPosition();
+        Vector2 desired = MoveTowards(context.playerPosition, delta, GetSpeed());
+        Vector2 resolved = ResolveRoomCollision(layout, desired);
+        SetPosition(resolved);
+        isMoving_ = Vector2Distance(before, resolved) > 1e-3f;
+        if (!IsInsideRoomBounds(layout, resolved)) {
+            StartReturnToOrigin();
+        }
+    } else {
+        isMoving_ = false;
+    }
+
+    // Durante a carga o corpo já olha para onde o golpe vai.
+    const Vector2& facing = (attackState_.phase == EnemyRules::AttackPhase::Charging) ? lockedAim_ : aimDir;
+    facingLeft_ = (facing.x < 0.0f);
+    UpdateAnimation(delta, isMoving_);
+}
+
+void EnemyCommon::FireDefinedAttack(const EnemyUpdateContext& context) {
+    ProjectileBlueprint projectile = EnemyAttacks::BuildProjectile(*definition_, damageMultiplier_);
+
+    ProjectileSpawnContext spawnContext{};
+    spawnContext.origin = GetPosition();
+    spawnContext.followTarget = GetPositionAddress();
+    // Estocada e giro seguem o inimigo: somem junto com ele (ver diagnostico-de-crashes.md).
+    spawnContext.ownerLifetime = GetProjectileLifetime();
+    spawnContext.aimDirection = lockedAim_;
+    context.projectileSystem.SpawnProjectile(projectile, spawnContext);
 }
 
 // Instancia projétil baseado no blueprint da arma configurada.
@@ -245,7 +324,10 @@ void EnemyCommon::Draw(const EnemyDrawContext& context) const {
     };
 
     bool drew = false;
-    if (isMoving_ && walkingTexture_.id != 0 && spriteInfo_.frameCount > 0) {
+    if (attackState_.phase == EnemyRules::AttackPhase::Charging && chargeTexture_.id != 0) {
+        drew = drawTexture(chargeTexture_, chargeTexture_.width, chargeTexture_.height, 0);
+    }
+    if (!drew && isMoving_ && walkingTexture_.id != 0 && spriteInfo_.frameCount > 0) {
         drew = drawTexture(walkingTexture_, spriteInfo_.frameWidth, spriteInfo_.frameHeight, currentFrame_);
     }
 
@@ -272,7 +354,10 @@ void EnemyCommon::Draw(const EnemyDrawContext& context) const {
         float border = std::max(0.0f, kHealthBarBackgroundThickness);
 
         float centerX = position.x;
-        float barY = position.y - kHealthBarVerticalOffset;
+        // Inimigos com sprite próprio têm alturas diferentes: a barra acompanha o topo do frame.
+        float barY = position.y - ((definition_ != nullptr && spriteInfo_.frameHeight > 0)
+                                       ? static_cast<float>(spriteInfo_.frameHeight) + kHealthBarSpriteGap
+                                       : kHealthBarVerticalOffset);
         Rectangle background{
             centerX - barWidth * 0.5f,
             barY,

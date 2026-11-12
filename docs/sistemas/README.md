@@ -5,6 +5,7 @@ Uma nota por sistema, criada quando o sistema passa a existir ou ganha regras qu
 | Nota | Sistema |
 |---|---|
 | [props-e-iluminacao.md](props-e-iluminacao.md) | Props de chão, catálogo, geração e iluminação |
+| [inimigos.md](inimigos.md) | Inimigos da Dungeon: atributos, ataques, spawn e escalonamento temporário |
 | [reward-pouches.md](reward-pouches.md) | Bolsas de recompensa: pools, drops e coleta |
 | [colisao-de-salas.md](colisao-de-salas.md) | Limite inferior das salas e navegação junto à borda |
 | [fim-de-run.md](fim-de-run.md) | Estatísticas da run e tela de resumo ao morrer |

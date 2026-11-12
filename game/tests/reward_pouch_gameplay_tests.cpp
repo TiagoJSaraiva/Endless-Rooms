@@ -203,7 +203,13 @@ void CheckDefaultTables() {
                 ++counts[type ? static_cast<int>(*type) : 3];
             }
             if (biome == BiomeType::Cave) assert(counts[0] == 60 && counts[1] == 10 && counts[2] == 0 && counts[3] == 30);
-            if (biome == BiomeType::Dungeon) assert(counts[0] == 50 && counts[1] == 20 && counts[2] == 5 && counts[3] == 25);
+            if (biome == BiomeType::Dungeon) {
+                // Bolsas por inimigo da Dungeon (balanceamento.md, "Economia").
+                if (enemy->GetName() == "dungeon_victim") assert(counts[0] == 35 && counts[1] == 5 && counts[2] == 0 && counts[3] == 60);
+                else if (enemy->GetName() == "dungeon_guard") assert(counts[0] == 35 && counts[1] == 20 && counts[2] == 0 && counts[3] == 45);
+                else if (enemy->GetName() == "dungeon_executioner") assert(counts[0] == 0 && counts[1] == 40 && counts[2] == 40 && counts[3] == 20);
+                else assert(false);
+            }
             if (biome == BiomeType::Mansion) assert(counts[0] == 40 && counts[1] == 30 && counts[2] == 10 && counts[3] == 20);
         }
     }
