@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
+#include <vector>
 
 namespace {
 
@@ -24,9 +25,8 @@ void CheckGeneratedWorld(std::uint64_t seed) {
         if (room.GetType() == RoomType::Lobby) {
             assert(room.GetBiome() == BiomeType::Lobby);
         } else {
-            assert(room.GetBiome() == BiomeType::Cave ||
-                   room.GetBiome() == BiomeType::Mansion ||
-                   room.GetBiome() == BiomeType::Dungeon);
+            // Caverna e mansão estão congeladas na demo: o sorteio só produz dungeon.
+            assert(room.GetBiome() == BiomeType::Dungeon);
             if (selectedBiome == BiomeType::Unknown) {
                 selectedBiome = room.GetBiome();
             } else {
@@ -61,6 +61,39 @@ void CheckGeneratedWorld(std::uint64_t seed) {
             }
         }
     }
+}
+
+// O gerador não produz mais salas de boss; Normal e ao menos um tipo especial aparecem.
+void CheckNoBossRooms(std::uint64_t seed) {
+    constexpr std::size_t kTargetRoomCount = 8;
+    constexpr int kMaxExpansionRadius = 3;
+    RoomManager manager(seed);
+    for (int radius = 2; radius <= kMaxExpansionRadius && manager.Rooms().size() < kTargetRoomCount; ++radius) {
+        manager.EnsureNeighborsGenerated(manager.GetCurrentCoords(), radius);
+    }
+    assert(manager.Rooms().size() >= kTargetRoomCount);
+
+    for (const auto& [coords, roomPointer] : manager.Rooms()) {
+        (void)coords;
+        assert(roomPointer->GetType() != RoomType::Boss);
+    }
+}
+
+void CheckSpecialRoomsAppear() {
+    constexpr std::uint64_t kSeedCount = 20;
+    bool sawNormal = false;
+    bool sawSpecial = false;
+    for (std::uint64_t seed = 1; seed <= kSeedCount; ++seed) {
+        RoomManager manager(seed);
+        manager.EnsureNeighborsGenerated(manager.GetCurrentCoords(), 3);
+        for (const auto& [coords, roomPointer] : manager.Rooms()) {
+            (void)coords;
+            const RoomType type = roomPointer->GetType();
+            if (type == RoomType::Normal) sawNormal = true;
+            if (type == RoomType::Forge || type == RoomType::Shop || type == RoomType::Chest) sawSpecial = true;
+        }
+    }
+    assert(sawNormal && sawSpecial);
 }
 
 void CheckForcedBiome(std::uint64_t seed, BiomeType forcedBiome) {
@@ -151,6 +184,8 @@ int main() {
     CheckBiomeConfigParsing();
     CheckWallPropRegistry();
     for (std::uint64_t seed = 1; seed <= 16; ++seed) CheckGeneratedWorld(seed);
+    for (std::uint64_t seed = 1; seed <= 20; ++seed) CheckNoBossRooms(seed);
+    CheckSpecialRoomsAppear();
     CheckForcedBiome(1234, BiomeType::Dungeon);
     CheckForcedBiome(5678, BiomeType::Cave);
     CheckForcedBiome(9012, BiomeType::Mansion);

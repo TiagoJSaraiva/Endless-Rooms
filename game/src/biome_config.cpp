@@ -29,6 +29,11 @@ std::string Normalize(std::string_view value) {
 
 } // namespace
 
+const std::vector<BiomeType>& RandomBiomes() {
+    static const std::vector<BiomeType> biomes{BiomeType::Dungeon};
+    return biomes;
+}
+
 std::optional<BiomeType> ParseBiomeOverride(std::string_view value) {
     const std::string normalized = Normalize(value);
     if (normalized == "cave") return BiomeType::Cave;
