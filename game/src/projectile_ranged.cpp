@@ -148,7 +148,7 @@ public:
         if (terminalFrame_) return;
         auto exit = CombatGeometry::ExitFraction(previousPosition_, position_, areas);
         if (!exit) return;
-        // Para na parede, mas mantem o frame para que acertos antes dela ainda contem.
+        // Para na parede, mas mantém o frame para que acertos antes dela ainda contem.
         position_ = Vector2Add(previousPosition_, Vector2Scale(Vector2Subtract(position_, previousPosition_), *exit));
         terminalFrame_ = true;
     }
@@ -327,7 +327,7 @@ public:
         outEvents.push_back(event);
     }
 
-    // Guarda as areas; o feixe e recalculado a cada frame porque segue o dono.
+    // Guarda as áreas; o feixe é recalculado a cada frame porque segue o dono.
     void ClipToPassable(const std::vector<Rectangle>& areas) override { passableAreas_ = areas; }
 
     bool IsExpired() const override {

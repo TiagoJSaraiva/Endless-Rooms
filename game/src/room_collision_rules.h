@@ -15,8 +15,8 @@ int BottomInsetPixels(BiomeType biome);
 // Constrói os limites de colisão em pixels para o retângulo de tiles da sala.
 Rectangle RoomBoundsForCollision(const TileRect& tileBounds, BiomeType biome);
 
-// Area por onde projeteis podem voar, em pixels: pisos das salas mais corredores de portas
-// abertas. Porta fechada ou selada bloqueia, entao o corredor dela fica de fora.
+// Área por onde projéteis podem voar, em pixels: pisos das salas mais corredores de portas
+// abertas. Porta fechada ou selada bloqueia, então o corredor dela fica de fora.
 std::vector<Rectangle> ProjectilePassableAreas(const std::vector<const Room*>& rooms);
 
 } // namespace RoomCollisionRules

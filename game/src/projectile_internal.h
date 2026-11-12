@@ -11,7 +11,7 @@ struct ProjectileSystem::ProjectileInstance {
     virtual void Update(float deltaSeconds) = 0;
     virtual void Draw() const = 0;
     virtual bool IsExpired() const = 0;
-    // Limita o projetil as areas livres (chamado apos Update); sem efeito por padrao.
+    // Limita o projétil às áreas livres (chamado após Update); sem efeito por padrão.
     virtual void ClipToPassable(const std::vector<Rectangle>&) {}
     virtual float ImpactFraction(const ProjectileTarget&) const { return 0.0f; }
     virtual bool ConsumesOnImpact() const { return false; }

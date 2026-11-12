@@ -29,10 +29,10 @@ float RectSweep(Vector2 a,Vector2 b,Rectangle r) {
     return lo;
 }
 
-// Tolerancia para considerar contiguos dois intervalos que se tocam na borda compartilhada.
+// Tolerância para considerar contíguos dois intervalos que se tocam na borda compartilhada.
 constexpr float kIntervalEpsilon=1e-4f;
 struct Interval { float lo; float hi; };
-// Liang-Barsky: intervalo de t em [0,1] em que o segmento esta dentro do retangulo.
+// Liang-Barsky: intervalo de t em [0,1] em que o segmento está dentro do retângulo.
 std::optional<Interval> InsideInterval(Vector2 a,Vector2 b,Rectangle r) {
     float lo=0,hi=1;
     auto axis=[&](float start,float delta,float min,float max) {
@@ -52,7 +52,7 @@ std::optional<float> ExitFraction(Vector2 from,Vector2 to,const std::vector<Rect
     for(const Rectangle& area:areas) {
         if(auto interval=InsideInterval(from,to,area)) intervals.push_back(*interval);
     }
-    // Encadeia os intervalos contiguos que comecam em t=0; o fim da cadeia e a saida.
+    // Encadeia os intervalos contíguos que começam em t=0; o fim da cadeia é a saída.
     float reach=-1.0f;
     bool extended=true;
     while(extended) {
