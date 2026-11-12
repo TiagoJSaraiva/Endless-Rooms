@@ -80,16 +80,7 @@ void PropRenderer::Unload() {
     textures_.clear();
 }
 
-float SceneLighting::Ambient(BiomeType biome) {
-    switch(biome) {
-        case BiomeType::Dungeon:return 0.65f;
-        case BiomeType::Cave:return 0.75f;
-        case BiomeType::Mansion:return 0.85f;
-        default:return 1.0f;
-    }
-}
-
-void SceneLighting::Apply(const std::vector<FloorRoomView>& rooms,Camera2D camera,PropRenderer& props,float time,
+void SceneLighting::Apply(float ambientLevel,const std::vector<FloorRoomView>& rooms,Camera2D camera,PropRenderer& props,float time,
                           const RenderTexture2D* output,const std::vector<SceneLightSource>& additionalLights) {
     // Resource allocation may bind a framebuffer; finish the world pass first.
     rlDrawRenderBatchActive();
@@ -110,35 +101,11 @@ void SceneLighting::Apply(const std::vector<FloorRoomView>& rooms,Camera2D camer
         gradient_=LoadTextureFromImage(img);UnloadImage(img);
         SetTextureFilter(gradient_,TEXTURE_FILTER_BILINEAR);
     }
-    // A tile union prevents overlapping room/corridor passes from darkening twice.
-    FloorRules::Frame frame;
-    std::unordered_map<RoomCoords,const Room*,RoomCoordsHash> lookup;
-    for(const auto& view:rooms) lookup[view.room->GetCoords()]=view.room;
-    for(const auto& view:rooms) {
-        const auto& room=*view.room;
-        auto bounds=room.Layout().tileBounds;
-        // Include wall sprites above and below the floor.
-        TileRect walls{bounds.x-1,bounds.y-2,bounds.width+2,bounds.height+3};
-        FloorRules::AddRect(frame,walls,room.GetBiome(),view.visibility);
-        for(const auto& door:room.Layout().doors) {
-            if(door.sealed) continue;
-            auto biome=room.GetBiome();
-            auto other=lookup.find(door.targetCoords);
-            if(other!=lookup.end()) biome=FloorRules::CorridorBiome(room.GetCoords(),biome,other->first,other->second->GetBiome());
-            const auto& c=door.corridorTiles;
-            if(c.width>0&&c.height>0)
-                FloorRules::AddRect(frame,{c.x,c.y-2,c.width,c.height+3},biome,view.visibility);
-        }
-    }
+    // Decisão 0009: o mesmo nível cobre a tela inteira, inclusive paredes e o fundo entre salas,
+    // para que a escuridão não dependa do contorno de cada sala.
+    unsigned char value=static_cast<unsigned char>(std::round(255*std::clamp(ambientLevel,0.0f,1.0f)));
     BeginTextureMode(map_);
-    ClearBackground(WHITE);
-    BeginMode2D(camera);
-    for(const auto& entry:frame) {
-        float level=1-(1-Ambient(entry.second.biome))*entry.second.visibility;
-        unsigned char value=static_cast<unsigned char>(std::round(255*level));
-        DrawRectangle(entry.first.x*TILE_SIZE,entry.first.y*TILE_SIZE,TILE_SIZE,TILE_SIZE,{value,value,value,255});
-    }
-    EndMode2D();
+    ClearBackground({value,value,value,255});
     // Floor props and explicit sources share the same light pass.
     std::vector<SceneLightSource> sources=additionalLights;
     for(const auto& view:rooms) {

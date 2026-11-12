@@ -417,7 +417,7 @@ $(REWARD_POUCH_GAMEPLAY_TEST_BIN): tests/reward_pouch_gameplay_tests.cpp $(REWAR
 test-reward-pouch-render: $(REWARD_POUCH_RENDER_TEST_BIN)
 	$(REWARD_POUCH_RENDER_TEST_BIN)
 
-REWARD_POUCH_RENDER_SOURCES = src/reward_pouch.cpp src/reward_pouch_renderer.cpp src/prop_renderer.cpp src/prop.cpp src/room.cpp src/floor_rules.cpp
+REWARD_POUCH_RENDER_SOURCES = src/reward_pouch.cpp src/reward_pouch_renderer.cpp src/prop_renderer.cpp src/prop.cpp src/room.cpp src/floor_rules.cpp src/lighting_rules.cpp
 $(REWARD_POUCH_RENDER_TEST_BIN): tests/reward_pouch_render_tests.cpp $(REWARD_POUCH_RENDER_SOURCES) $(wildcard src/*.h) raylib_build
 	$(CC) -o $@ tests/reward_pouch_render_tests.cpp $(REWARD_POUCH_RENDER_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
@@ -429,7 +429,7 @@ $(WALL_PROP_RULES_TEST_BIN): tests/wall_prop_rules_tests.cpp $(WALL_PROP_RULES_S
 test-wall-prop-render: $(WALL_PROP_RENDER_TEST_BIN)
 	$(WALL_PROP_RENDER_TEST_BIN)
 
-WALL_PROP_RENDER_SOURCES = $(WALL_PROP_RULES_SOURCES) src/wall_prop_renderer.cpp src/wall_tiles.cpp src/prop_renderer.cpp src/prop.cpp src/room.cpp
+WALL_PROP_RENDER_SOURCES = $(WALL_PROP_RULES_SOURCES) src/wall_prop_renderer.cpp src/wall_tiles.cpp src/prop_renderer.cpp src/prop.cpp src/room.cpp src/lighting_rules.cpp
 $(WALL_PROP_RENDER_TEST_BIN): tests/wall_prop_render_tests.cpp $(WALL_PROP_RENDER_SOURCES) $(wildcard src/*.h) raylib_build
 	$(CC) -o $@ tests/wall_prop_render_tests.cpp $(WALL_PROP_RENDER_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
@@ -445,8 +445,8 @@ $(PROP_GAMEPLAY_TEST_BIN): tests/prop_gameplay_tests.cpp $(PROP_GAMEPLAY_SOURCES
 test-prop-render: $(PROP_RENDER_TEST_BIN)
 	$(PROP_RENDER_TEST_BIN)
 
-$(PROP_RENDER_TEST_BIN): tests/prop_render_tests.cpp src/prop_renderer.cpp src/prop.cpp src/room.cpp src/floor_rules.cpp $(wildcard src/*.h) raylib_build
-	$(CC) -o $@ tests/prop_render_tests.cpp src/prop_renderer.cpp src/prop.cpp src/room.cpp src/floor_rules.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
+$(PROP_RENDER_TEST_BIN): tests/prop_render_tests.cpp src/prop_renderer.cpp src/prop.cpp src/room.cpp src/floor_rules.cpp src/lighting_rules.cpp $(wildcard src/*.h) raylib_build
+	$(CC) -o $@ tests/prop_render_tests.cpp src/prop_renderer.cpp src/prop.cpp src/room.cpp src/floor_rules.cpp src/lighting_rules.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
 $(FLOOR_TEST_BIN): tests/floor_rules_tests.cpp src/floor_rules.cpp src/floor_rules.h src/room_types.h
 	$(CC) -o $@ tests/floor_rules_tests.cpp src/floor_rules.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)

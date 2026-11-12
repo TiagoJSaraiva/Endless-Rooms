@@ -43,9 +43,9 @@ public:
     SceneLighting() = default;
     SceneLighting(const SceneLighting&) = delete;
     SceneLighting& operator=(const SceneLighting&) = delete;
-    static float Ambient(BiomeType biome);
     // Called in screen space, after world drawing and before prompts/HUD.
-    void Apply(const std::vector<FloorRoomView>& rooms, Camera2D camera, PropRenderer& props, float elapsedSeconds,
+    // ambientLevel (LightingRules) escurece a tela inteira; rooms só fornecem as luzes dos props.
+    void Apply(float ambientLevel, const std::vector<FloorRoomView>& rooms, Camera2D camera, PropRenderer& props, float elapsedSeconds,
                const RenderTexture2D* output = nullptr, const std::vector<SceneLightSource>& additionalLights = {});
     void Unload();
 private:

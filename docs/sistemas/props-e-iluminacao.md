@@ -76,17 +76,28 @@ os ataques. Consulte [Diagnóstico de crashes](diagnostico-de-crashes.md).
 
 ## Iluminação
 
-`SceneLighting::Ambient` centraliza a luminosidade: Dungeon 65%, Caverna
-75%, Mansão 85% e Lobby 100%. A cena recebe um mapa de luz multiplicativo;
-fontes adicionam luz colorida com queda radial suave e saturação. A vela
-tem intensidade 0,4, cor RGB `(255, 210, 140)` e posição normalizada
-`(0,52; 0,04)` dentro do sprite completo. Esses valores ficam em `PropLight`.
+A escuridão é um filtro único sobre todo o mundo na tela (decisão
+[0009](../decisoes/0009-escuridao-em-tela-cheia.md)), com o mesmo nível
+dentro das salas, nas paredes e no fundo entre elas.
+`LightingRules::AmbientLevel` guarda a luminosidade por bioma: Dungeon 65%,
+Caverna 75%, Mansão 85% e Lobby 100%. O nível vem da posição do jogador.
+`BuildAmbientZones` monta uma zona por sala (área do piso) e uma por corredor
+de porta não selada. `AmbientLevelAt` devolve o nível da sala ou, dentro de um
+corredor, interpola entre a sala de origem e a de destino conforme o progresso
+de uma borda à outra. Fora de qualquer zona, `main.cpp` mantém o último nível;
+uma nova run volta ao nível do lobby.
 
-A luz acompanha câmera e zoom, respeita a revelação, e cada fonte é
-limitada à própria sala. As máscaras das portas continuam escuras.
-Não há sombras projetadas, emissão do jogador nem efeito sobre HUD,
-inventário, console e prompts. Texturas e mapa de luz são descarregados
-antes do fechamento da janela.
+`SceneLighting::Apply` recebe esse nível e preenche com ele um mapa de luz
+multiplicativo; fontes adicionam luz colorida com queda radial suave e
+saturação. A vela tem intensidade 0,4, cor RGB `(255, 210, 140)` e posição
+normalizada `(0,52; 0,04)` dentro do sprite completo. Esses valores ficam em
+`PropLight`.
+
+A luz acompanha câmera e zoom, e cada fonte é limitada à própria sala. A
+revelação reduz só a luz emitida: salas ocultas não emitem, mas o filtro vale
+na tela inteira. As máscaras das portas continuam escuras. Não há sombras
+projetadas, emissão do jogador nem efeito sobre HUD, inventário, console e
+prompts. Texturas e mapa de luz são descarregados antes do fechamento da janela.
 
 ## Props de parede
 
@@ -163,8 +174,7 @@ Máscaras escuras de portas continuam sendo aplicadas normalmente.
 `SceneLighting::Apply` aceita fontes adicionais `SceneLightSource`, com
 posição global, configuração de luz, visibilidade e retângulo de recorte.
 As fontes de parede são limitadas à sala ou ao corredor anfitrião, incluindo
-a faixa vertical de paredes, e não iluminam salas vizinhas. As paredes dos
-corredores também recebem a luminosidade ambiente do respectivo bioma.
+a faixa vertical de paredes, e não iluminam salas vizinhas.
 Tochas e velas usam o mesmo passe multiplicativo, com saturação, câmera e
 zoom; interfaces continuam fora desse passe.
 
@@ -180,7 +190,8 @@ mingw32-make test-wall-render
 mingw32-make test-wall-prop-render
 ```
 
-Os testes de regras não exigem janela. Os testes de combate e gameplay
+Os testes de regras não exigem janela; `lighting_rules_tests` cobre a tabela
+de luminosidade e o gradiente dos corredores. Os testes de combate e gameplay
 usam a Raylib vendorizada, sem abrir janela. O teste gráfico exige contexto
 OpenGL e usa uma janela oculta, assets temporários e leitura de uma textura
 de tamanho fixo, independente da escala de tela do Windows. Ele cobre
@@ -213,8 +224,10 @@ Verificação manual em `game.exe`, iniciado de `game/`:
    ataques pelos outros props. As recompensas só são entregues na coleta.
 5. Sair e retornar: vasos quebrados continuam ausentes. Reiniciar a partida
    recria os props. Salas especiais e os demais biomas não recebem props.
-6. Conferir luz suave perto da vela, legibilidade longe dela, transições de
-   revelação e corredores fechados. HUD, inventário, prompts e console
+6. Conferir luz suave perto da vela, legibilidade longe dela e corredores
+   fechados. Do lobby até a primeira sala da Dungeon, a tela escurece aos
+   poucos ao longo do corredor e clareia do mesmo jeito ao voltar; junto às
+   paredes não há faixa escura vazando. HUD, inventário, prompts e console
    mantêm suas cores. Observar encaixe da iluminação ao mover a câmera.
 7. Em Dungeon, conferir tochas nas upper e luz junto às bottom opacas.
    Aproximar o jogador da bottom: a fileira fica translúcida e revela as

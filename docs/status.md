@@ -46,7 +46,7 @@ Subtarefas, em ordem de execução. Cada uma é planejada no modo B antes do có
 - Retomar os biomas caverna e mansão.
 
 ## Próximo passo
-- Subtarefa 1.1: `/planejar` no modo B para o filtro de escuridão em tela cheia.
+- Subtarefa 1.1 implementada; falta a validação jogando (roteiro em `docs/sistemas/props-e-iluminacao.md`, item 6). Validada, marcar 1.1 e seguir para 1.2 com `/planejar` no modo B.
 
 ## Bloqueios
 - Nenhum.

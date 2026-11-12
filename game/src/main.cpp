@@ -1,6 +1,7 @@
 #include <functional>
 #include "prop_rules.h"
 #include "prop_renderer.h"
+#include "lighting_rules.h"
 #include "wall_prop_renderer.h"
 #include "reward_pouch_operations.h"
 #include "reward_pouch_renderer.h"
@@ -1124,6 +1125,8 @@ int main() {
     PropRenderer propRenderer;
     RewardPouchRenderer rewardPouchRenderer;
     SceneLighting sceneLighting;
+    // Mantido entre frames para que vãos sem zona (ex.: soleira da porta) não causem salto.
+    float ambientLevel = LightingRules::AmbientLevel(BiomeType::Lobby);
     float propAnimationTime = 0;
     roomRenderer.BeginFloorRun(worldSeed);
     ProjectileSystem projectileSystem;
@@ -1186,6 +1189,7 @@ int main() {
         roomEnemies.clear();
         roomsWithSpawnedEnemies.clear();
         roomRevealStates.clear();
+        ambientLevel = LightingRules::AmbientLevel(BiomeType::Lobby);
         damageNumbers.clear();
         projectileSystem.Clear();
         enemyProjectileSystem.Clear();
@@ -2246,7 +2250,15 @@ int main() {
 
         EndMode2D();
         const auto wallLights = WallPropRendering::Lights(wallPropViews, propRenderer, propAnimationTime);
-        sceneLighting.Apply(floorRooms, renderCamera, propRenderer, propAnimationTime, nullptr, wallLights);
+        std::vector<const Room*> ambientRooms;
+        ambientRooms.reserve(roomManager.Rooms().size());
+        for (const auto& entry : roomManager.Rooms()) {
+            ambientRooms.push_back(entry.second.get());
+        }
+        if (auto level = LightingRules::AmbientLevelAt(LightingRules::BuildAmbientZones(ambientRooms), playerPosition)) {
+            ambientLevel = *level;
+        }
+        sceneLighting.Apply(ambientLevel, floorRooms, renderCamera, propRenderer, propAnimationTime, nullptr, wallLights);
         BeginMode2D(renderCamera);
 
 

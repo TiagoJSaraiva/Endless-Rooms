@@ -1,5 +1,6 @@
 #include "wall_prop_renderer.h"
 #include "wall_tiles.h"
+#include "lighting_rules.h"
 #include "rlgl.h"
 
 #include <array>
@@ -127,13 +128,14 @@ void Lighting() {
     const auto bottom = At(room, WallRules::Section::Bottom, definition);
     PropRenderer renderer; SceneLighting lighting;
     Camera2D camera{}; camera.zoom = 1;
+    const float kDungeonLevel = LightingRules::AmbientLevel(BiomeType::Dungeon);
     const auto sources = WallPropRendering::Lights({{&bottom, 1}}, renderer, 0);
     assert(sources.size() == 1);
     assert(sources[0].light.radius > PropLight{}.radius && sources[0].light.intensity > PropLight{}.intensity);
     const Vector2 p = sources[0].position;
     auto render = [&](const std::vector<SceneLightSource>& lights, float visibility = 1.0f) {
         BeginTextureMode(target); ClearBackground(WHITE);
-        lighting.Apply({{&room, visibility}}, camera, renderer, 0, &target, lights);
+        lighting.Apply(kDungeonLevel, {{&room, visibility}}, camera, renderer, 0, &target, lights);
         return Capture();
     };
     Image baseline = render({}); Image torch = render(sources);
@@ -155,7 +157,9 @@ void Lighting() {
     UnloadImage(baseline); UnloadImage(torch);
     camera.zoom = 1; camera.offset = {};
     assert(WallPropRules::VisibleInstances({bottom}, {{&room, 0}}).empty());
-    torch = render({}, 0); Expect(GetImageColor(torch, int(p.x), int(p.y)), WHITE); UnloadImage(torch);
+    // Sala oculta não emite luz; o filtro de tela cheia continua valendo (decisão 0009).
+    const auto dungeonGray = static_cast<unsigned char>(std::round(255 * kDungeonLevel));
+    torch = render({}, 0); Expect(GetImageColor(torch, int(p.x), int(p.y)), {dungeonGray, dungeonGray, dungeonGray, 255}); UnloadImage(torch);
 
     auto left = MakeRoom({}, {0, 3, 6, 6}, RoomType::Shop);
     auto right = MakeRoom({1, 0}, {10, 3, 6, 6}, RoomType::Shop);
@@ -175,7 +179,7 @@ void Lighting() {
     assert(corridorLights.size() == 2);
     auto renderCorridor = [&](const std::vector<SceneLightSource>& lights) {
         BeginTextureMode(target); ClearBackground(WHITE);
-        lighting.Apply({{&left, 1}, {&right, 1}}, camera, renderer, 0, &target, lights);
+        lighting.Apply(kDungeonLevel, {{&left, 1}, {&right, 1}}, camera, renderer, 0, &target, lights);
         return Capture();
     };
     baseline = renderCorridor({}); torch = renderCorridor(corridorLights);
@@ -262,7 +266,7 @@ void Preview() {
         walls.DrawForeground(rooms, player, 0.2f);
         EndMode2D();
         const auto lights = WallPropRendering::Lights(props, renderer, 0.23f);
-        lighting.Apply(floors, camera, renderer, 0.23f, &target, lights);
+        lighting.Apply(LightingRules::AmbientLevel(BiomeType::Dungeon), floors, camera, renderer, 0.23f, &target, lights);
         DrawText(panel == 0 ? "UPPER" : panel == 1 ? "BOTTOM OPACA" : panel == 2 ? "BOTTOM TRANSLUCIDA" : "CORREDOR", 18, 14, 20, WHITE);
         Image image = Capture();
         ImageDraw(&preview, image, {0, 0, 512, 384}, {float(px), float(py), 512, 384}, WHITE);

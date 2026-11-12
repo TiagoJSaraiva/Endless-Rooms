@@ -1,5 +1,6 @@
 #include "reward_pouch_renderer.h"
 #include "prop_renderer.h"
+#include "lighting_rules.h"
 #include "rlgl.h"
 
 #include <cassert>
@@ -104,9 +105,9 @@ void CheckRendering() {
     Camera2D camera{};
     camera.zoom = 1;
     BeginTextureMode(target); ClearBackground(BLACK); renderer.Draw(pouch, 1);
-    lighting.Apply({{&room, 1}}, camera, props, 0, &target);
+    lighting.Apply(LightingRules::AmbientLevel(BiomeType::Dungeon), {{&room, 1}}, camera, props, 0, &target);
     image = Capture();
-    assert(Near(GetImageColor(image, 100, 80).r, int(RED.r * SceneLighting::Ambient(BiomeType::Dungeon))));
+    assert(Near(GetImageColor(image, 100, 80).r, int(RED.r * LightingRules::AmbientLevel(BiomeType::Dungeon))));
     UnloadImage(image);
     lighting.Unload();
     props.Unload();

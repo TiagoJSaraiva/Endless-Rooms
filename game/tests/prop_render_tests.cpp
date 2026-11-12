@@ -1,4 +1,5 @@
 #include "prop_renderer.h"
+#include "lighting_rules.h"
 #include "rlgl.h"
 #include <cassert>
 #include <chrono>
@@ -68,48 +69,59 @@ void CheckSprites() {
 void CheckLighting() {
     auto room=MakeRoom();PropRenderer renderer;SceneLighting lighting;
     Camera2D camera{};camera.zoom=1;
+    const float dungeon=LightingRules::AmbientLevel(BiomeType::Dungeon);
     BeginTextureMode(target);ClearBackground(WHITE);DrawRectangle(100,100,40,40,RED);
-    lighting.Apply({{&room,1}},camera,renderer,0,&target);
+    lighting.Apply(dungeon,{{&room,1}},camera,renderer,0,&target);
     Image first=Capture();EndTextureMode();
     assert(Near(GetImageColor(first,110,110).r,int(RED.r*0.65f)));
     assert(GetImageColor(first,110,110).g<30);UnloadImage(first);
     for(auto biome:{BiomeType::Dungeon,BiomeType::Cave,BiomeType::Mansion,BiomeType::Lobby}) {
         auto sample=MakeRoom(biome);
-        BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply({{&sample,1}},camera,renderer,0,&target);
+        BeginTextureMode(target);ClearBackground(WHITE);
+        lighting.Apply(LightingRules::AmbientLevel(biome),{{&sample,1}},camera,renderer,0,&target);
         Image image=Capture();EndTextureMode();
-        assert(Near(GetImageColor(image,200,200).r,int(255*SceneLighting::Ambient(biome))));UnloadImage(image);
+        assert(Near(GetImageColor(image,200,200).r,int(255*LightingRules::AmbientLevel(biome))));UnloadImage(image);
     }
+    // Regressão do vazamento: o nível é o mesmo dentro da sala, nas paredes e fora delas (decisão 0009).
+    auto small=MakeRoom();small.Layout().tileBounds={0,0,2,2};
+    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply(dungeon,{{&small,1}},camera,renderer,0,&target);
+    Image uniform=Capture();EndTextureMode();
+    for(Vector2 point:{Vector2{60,60},Vector2{140,60},Vector2{60,170},Vector2{400,400}})
+        assert(Near(GetImageColor(uniform,int(point.x),int(point.y)).r,166));
+    UnloadImage(uniform);
     const auto& barrel=GetPropDefinitions()[1];
     room.Props().push_back({&barrel,{3,3,1,1},0,false});
     Vector2 source=renderer.LightPosition(room.Props()[0],0);
-    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply({{&room,1}},camera,renderer,0,&target);
+    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply(dungeon,{{&room,1}},camera,renderer,0,&target);
     Image image=Capture();EndTextureMode();
     auto near=GetImageColor(image,int(source.x),int(source.y));auto far=GetImageColor(image,10,480);
     assert(near.r>far.r+30&&near.r>=near.g&&near.g>near.b);assert(Near(far.r,166));UnloadImage(image);
     room.Props().push_back(room.Props()[0]);
-    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply({{&room,1}},camera,renderer,0,&target);
+    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply(dungeon,{{&room,1}},camera,renderer,0,&target);
     image=Capture();EndTextureMode();auto doubled=GetImageColor(image,int(source.x),int(source.y));
     assert(doubled.g>near.g&&doubled.r==255);UnloadImage(image);room.Props().pop_back();
-    // Hidden rooms have no effect. Partial reveal reduces both darkness and emitted light.
-    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply({{&room,0}},camera,renderer,0,&target);
-    image=Capture();EndTextureMode();assert(GetImageColor(image,200,200).r==255);UnloadImage(image);
-    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply({{&room,0.5f}},camera,renderer,0,&target);
-    image=Capture();EndTextureMode();assert(Near(GetImageColor(image,10,480).r,210));UnloadImage(image);
+    // Salas ocultas não emitem luz; revelação parcial reduz a luz emitida. O filtro vale nos dois casos.
+    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply(dungeon,{{&room,0}},camera,renderer,0,&target);
+    image=Capture();EndTextureMode();assert(Near(GetImageColor(image,int(source.x),int(source.y)).r,166));UnloadImage(image);
+    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply(dungeon,{{&room,0.5f}},camera,renderer,0,&target);
+    image=Capture();EndTextureMode();
+    auto partial=GetImageColor(image,int(source.x),int(source.y));
+    assert(partial.g>far.g+10&&partial.g<near.g);assert(Near(GetImageColor(image,10,480).r,166));UnloadImage(image);
     BeginTextureMode(target);ClearBackground(WHITE);DrawRectangle(0,0,40,512,BLACK);
-    lighting.Apply({{&room,1}},camera,renderer,0,&target);DrawRectangle(0,0,10,10,RED);
+    lighting.Apply(dungeon,{{&room,1}},camera,renderer,0,&target);DrawRectangle(0,0,10,10,RED);
     image=Capture();EndTextureMode();assert(GetImageColor(image,20,200).r==0);assert(GetImageColor(image,5,5).r==RED.r);UnloadImage(image);
     // Zoomed source near the boundary must not illuminate the neighboring room.
     auto neighbor=MakeRoom();neighbor.Layout().tileBounds.x=8;
     room.Props()[0].tiles={7,3,1,1};camera.zoom=0.5f;
-    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply({{&room,1},{&neighbor,1}},camera,renderer,0,&target);
+    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply(dungeon,{{&room,1},{&neighbor,1}},camera,renderer,0,&target);
     image=Capture();EndTextureMode();assert(Near(GetImageColor(image,270,100).r,166));UnloadImage(image);
     room.Props()[0].tiles={3,3,1,1};camera.zoom=1;
     room.Props()[0].destroyed=true;
-    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply({{&room,1}},camera,renderer,0,&target);
+    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply(dungeon,{{&room,1}},camera,renderer,0,&target);
     image=Capture();EndTextureMode();assert(Near(GetImageColor(image,int(source.x),int(source.y)).r,166));UnloadImage(image);
     // Reallocate the map when rendering to a different output size.
     auto original=target;target=LoadRenderTexture(128,128);
-    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply({{&room,1}},camera,renderer,0,&target);
+    BeginTextureMode(target);ClearBackground(WHITE);lighting.Apply(dungeon,{{&room,1}},camera,renderer,0,&target);
     image=Capture();EndTextureMode();assert(Near(GetImageColor(image,100,100).r,166));UnloadImage(image);
     UnloadRenderTexture(target);target=original;
     lighting.Unload();lighting.Unload();renderer.Unload();
@@ -125,7 +137,7 @@ void Preview() {
         DrawRectangle(x*64,y*64,63,63,{82,75,78,255});
     for(const auto& p:room.Props()) renderer.Draw(p,1,0);
     Camera2D camera{};camera.zoom=1;
-    lighting.Apply({{&room,1}},camera,renderer,0,&target);
+    lighting.Apply(LightingRules::AmbientLevel(BiomeType::Dungeon),{{&room,1}},camera,renderer,0,&target);
     Image image=Capture();EndTextureMode();
     fs::create_directories("obj");assert(ExportImage(image,"obj/props-preview.png"));UnloadImage(image);
     renderer.Unload();lighting.Unload();
