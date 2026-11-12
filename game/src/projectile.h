@@ -161,6 +161,10 @@ public:
     void Draw() const;
     void Clear();
 
+    // Regioes (pixels) onde projeteis podem existir; ao sair delas partindo de dentro,
+    // municao para e lasers terminam. Lista vazia = sem limite.
+    void SetPassableAreas(std::vector<Rectangle> areas);
+
     void SpawnProjectile(const ProjectileBlueprint& blueprint, const ProjectileSpawnContext& context);
 
     // Evento de dano retornado ao detectar colisão entre projétil e alvo.
@@ -188,4 +192,6 @@ private:
     std::vector<std::unique_ptr<ProjectileInstance>> projectiles_;
     // RNG usado para spreads, críticos etc.
     std::mt19937 rng_;
+    // Areas livres de parede; vazio desativa o corte.
+    std::vector<Rectangle> passableAreas_;
 };

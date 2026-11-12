@@ -1505,6 +1505,14 @@ int main() {
         }
 
         // Atualiza trajetória dos projéteis do jogador.
+        {
+            // Paredes param projéteis; as áreas mudam quando portas abrem ou fecham.
+            std::vector<const Room*> loadedRooms;
+            for (const auto& entry : roomManager.Rooms()) loadedRooms.push_back(entry.second.get());
+            const auto passableAreas = RoomCollisionRules::ProjectilePassableAreas(loadedRooms);
+            projectileSystem.SetPassableAreas(passableAreas);
+            enemyProjectileSystem.SetPassableAreas(passableAreas);
+        }
         projectileSystem.Update(delta);
 
         const float outgoingDamageMultiplier = player.derivedStats.damageDealtMultiplierFromCurse;

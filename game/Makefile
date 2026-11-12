@@ -37,6 +37,7 @@ PROP_COMBAT_TEST_BIN = tests/prop_combat_tests$(EXT)
 PROP_RENDER_TEST_BIN = tests/prop_render_tests$(EXT)
 PROP_GAMEPLAY_TEST_BIN = tests/prop_gameplay_tests$(EXT)
 PROJECTILE_LIFETIME_TEST_BIN = tests/projectile_lifetime_tests$(EXT)
+PROJECTILE_WALL_TEST_BIN = tests/projectile_wall_tests$(EXT)
 WALL_PROP_RULES_TEST_BIN = tests/wall_prop_rules_tests$(EXT)
 WALL_PROP_RENDER_TEST_BIN = tests/wall_prop_render_tests$(EXT)
 REWARD_POUCH_RULES_TEST_BIN = tests/reward_pouch_rules_tests$(EXT)
@@ -382,7 +383,7 @@ raylib_build:
 # Default target entry
 all: $(PROJECT_NAME)
 
-test: $(TEST_BIN) $(FLOOR_TEST_BIN) $(WALL_TEST_BIN) $(ROOM_GENERATION_TEST_BIN) $(ROOM_COLLISION_TEST_BIN) $(PROP_RULES_TEST_BIN) $(PROP_COMBAT_TEST_BIN) $(PROP_GAMEPLAY_TEST_BIN) $(REWARD_POUCH_RULES_TEST_BIN) $(REWARD_POUCH_GAMEPLAY_TEST_BIN) $(WALL_PROP_RULES_TEST_BIN) $(PROJECTILE_LIFETIME_TEST_BIN) $(LIGHTING_RULES_TEST_BIN)
+test: $(TEST_BIN) $(FLOOR_TEST_BIN) $(WALL_TEST_BIN) $(ROOM_GENERATION_TEST_BIN) $(ROOM_COLLISION_TEST_BIN) $(PROP_RULES_TEST_BIN) $(PROP_COMBAT_TEST_BIN) $(PROP_GAMEPLAY_TEST_BIN) $(REWARD_POUCH_RULES_TEST_BIN) $(REWARD_POUCH_GAMEPLAY_TEST_BIN) $(WALL_PROP_RULES_TEST_BIN) $(PROJECTILE_LIFETIME_TEST_BIN) $(PROJECTILE_WALL_TEST_BIN) $(LIGHTING_RULES_TEST_BIN)
 	$(TEST_BIN)
 	$(FLOOR_TEST_BIN)
 	$(WALL_TEST_BIN)
@@ -395,6 +396,7 @@ test: $(TEST_BIN) $(FLOOR_TEST_BIN) $(WALL_TEST_BIN) $(ROOM_GENERATION_TEST_BIN)
 	$(REWARD_POUCH_GAMEPLAY_TEST_BIN)
 	$(WALL_PROP_RULES_TEST_BIN)
 	$(PROJECTILE_LIFETIME_TEST_BIN)
+	$(PROJECTILE_WALL_TEST_BIN)
 	$(LIGHTING_RULES_TEST_BIN)
 
 $(LIGHTING_RULES_TEST_BIN): tests/lighting_rules_tests.cpp src/lighting_rules.cpp src/room.cpp $(wildcard src/*.h)
@@ -407,6 +409,9 @@ PROP_COMBAT_SOURCES = src/projectile.cpp src/projectile_melee.cpp src/projectile
 PROP_GAMEPLAY_SOURCES = $(PROP_COMBAT_SOURCES) src/enemy.cpp src/enemy_common.cpp src/enemy_spawner.cpp src/weapon_blueprints.cpp src/player.cpp src/prop.cpp src/prop_rules.cpp src/room.cpp src/room_collision_rules.cpp
 $(PROJECTILE_LIFETIME_TEST_BIN): tests/projectile_lifetime_tests.cpp $(PROP_GAMEPLAY_SOURCES) $(wildcard src/*.h) raylib_build
 	$(CC) -o $@ tests/projectile_lifetime_tests.cpp $(PROP_GAMEPLAY_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
+
+$(PROJECTILE_WALL_TEST_BIN): tests/projectile_wall_tests.cpp $(PROP_GAMEPLAY_SOURCES) $(wildcard src/*.h) raylib_build
+	$(CC) -o $@ tests/projectile_wall_tests.cpp $(PROP_GAMEPLAY_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
 WALL_PROP_RULES_SOURCES = src/wall_prop.cpp src/wall_rules.cpp src/floor_rules.cpp
 REWARD_POUCH_GAMEPLAY_SOURCES = $(PROP_GAMEPLAY_SOURCES) src/reward_pouch.cpp src/reward_pouch_operations.cpp src/inventory_operations.cpp src/inventory_rules.cpp src/chest.cpp src/room_manager.cpp src/room_features.cpp src/biome_config.cpp $(WALL_PROP_RULES_SOURCES)
@@ -457,8 +462,8 @@ $(WALL_TEST_BIN): tests/wall_rules_tests.cpp src/wall_rules.cpp src/wall_rules.h
 $(ROOM_GENERATION_TEST_BIN): tests/room_generation_tests.cpp src/room_manager.cpp src/room_features.cpp src/room.cpp src/chest.cpp src/prop.cpp src/prop_rules.cpp src/room_collision_rules.cpp src/biome_config.cpp $(WALL_PROP_RULES_SOURCES) $(wildcard src/*.h)
 	$(CC) -o $@ tests/room_generation_tests.cpp src/room_manager.cpp src/room_features.cpp src/room.cpp src/chest.cpp src/prop.cpp src/prop_rules.cpp src/room_collision_rules.cpp src/biome_config.cpp $(WALL_PROP_RULES_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
 
-$(ROOM_COLLISION_TEST_BIN): tests/room_collision_rules_tests.cpp src/room_collision_rules.cpp src/room_collision_rules.h src/room_types.h
-	$(CC) -o $@ tests/room_collision_rules_tests.cpp src/room_collision_rules.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
+$(ROOM_COLLISION_TEST_BIN): tests/room_collision_rules_tests.cpp src/room_collision_rules.cpp src/room.cpp $(wildcard src/*.h)
+	$(CC) -o $@ tests/room_collision_rules_tests.cpp src/room_collision_rules.cpp src/room.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
 
 # Optional integration test: requires a working graphics context (hidden window).
 test-floor-render: $(FLOOR_RENDER_TEST_BIN)
@@ -525,11 +530,12 @@ clean:
 	@cmd /C "if exist tests\wall_prop_rules_tests$(EXT) del /Q tests\wall_prop_rules_tests$(EXT)"
 	@cmd /C "if exist tests\wall_prop_render_tests$(EXT) del /Q tests\wall_prop_render_tests$(EXT)"
 	@cmd /C "if exist tests\projectile_lifetime_tests$(EXT) del /Q tests\projectile_lifetime_tests$(EXT)"
+	@cmd /C "if exist tests\projectile_wall_tests$(EXT) del /Q tests\projectile_wall_tests$(EXT)"
 	@cmd /C "if exist tests\lighting_rules_tests$(EXT) del /Q tests\lighting_rules_tests$(EXT)"
 	@echo Cleaning project build outputs
 else
 clean:
-	$(RM) -f $(WALL_PROP_RULES_TEST_BIN) $(WALL_PROP_RENDER_TEST_BIN) $(PROJECTILE_LIFETIME_TEST_BIN) $(LIGHTING_RULES_TEST_BIN)
+	$(RM) -f $(WALL_PROP_RULES_TEST_BIN) $(WALL_PROP_RENDER_TEST_BIN) $(PROJECTILE_LIFETIME_TEST_BIN) $(PROJECTILE_WALL_TEST_BIN) $(LIGHTING_RULES_TEST_BIN)
 	$(RM) -f $(OBJ_DIR)/*.o $(PROJECT_NAME)$(EXT) $(TEST_BIN) $(FLOOR_TEST_BIN) $(FLOOR_RENDER_TEST_BIN) $(WALL_TEST_BIN) $(WALL_RENDER_TEST_BIN) $(ROOM_GENERATION_TEST_BIN) $(ROOM_COLLISION_TEST_BIN) $(PROP_RULES_TEST_BIN) $(PROP_COMBAT_TEST_BIN) $(PROP_RENDER_TEST_BIN) $(PROP_GAMEPLAY_TEST_BIN) $(REWARD_POUCH_RULES_TEST_BIN) $(REWARD_POUCH_GAMEPLAY_TEST_BIN) $(REWARD_POUCH_RENDER_TEST_BIN) $(RAYLIB_SRC_PATH)/*.o $(RAYLIB_SRC_PATH)/libraylib.a $(RAYLIB_SRC_PATH)/libraylib.web.a $(RAYLIB_SRC_PATH)/raygui.c $(RAYLIB_SRC_PATH)/*-protocol.h $(RAYLIB_SRC_PATH)/*-protocol-code.h
 	@echo Cleaning project build outputs
 endif

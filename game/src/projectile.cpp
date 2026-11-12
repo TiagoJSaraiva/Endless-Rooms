@@ -238,6 +238,9 @@ void ProjectileSystem::Update(float deltaSeconds) {
         }), projectiles_.end());
     for (auto& projectile : projectiles_) {
         projectile->Update(deltaSeconds);
+        if (!passableAreas_.empty()) {
+            projectile->ClipToPassable(passableAreas_);
+        }
     }
 
     projectiles_.erase(
@@ -245,6 +248,10 @@ void ProjectileSystem::Update(float deltaSeconds) {
             return projectile->IsExpired();
         }),
         projectiles_.end());
+}
+
+void ProjectileSystem::SetPassableAreas(std::vector<Rectangle> areas) {
+    passableAreas_ = std::move(areas);
 }
 
 // Desenha cada projétil ativo (debug ou sprites customizados).
