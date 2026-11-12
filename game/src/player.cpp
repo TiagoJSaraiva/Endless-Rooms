@@ -91,9 +91,9 @@ PlayerCharacter CreateKnightCharacter() {
     knight.appearance.walking.verticalLayout = true;
 
     knight.baseAttributes = PlayerAttributes{};
-    knight.equipmentBonuses.primary.defesa = 2;
-    knight.equipmentBonuses.primary.vigor = 2;
-    knight.equipmentBonuses.secondary.reducaoDano = 5.0f;
+    // Sem bônus de personagem na demo: o cavaleiro começa com 100 PV e 0% de mitigação, e a defesa vem só
+    // de equipamento. Quando bônus de personagem voltarem (pós-demo), precisarão de um campo próprio, porque
+    // SyncEquipmentBonuses sobrescreve equipmentBonuses a cada troca de equipamento.
 
     // Aplica bônus iniciais antes de liberar o personagem para uso.
     knight.RecalculateStats();

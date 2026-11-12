@@ -9,6 +9,7 @@ Uma nota por sistema, criada quando o sistema passa a existir ou ganha regras qu
 | [colisao-de-salas.md](colisao-de-salas.md) | Limite inferior das salas e navegação junto à borda |
 | [fim-de-run.md](fim-de-run.md) | Estatísticas da run e tela de resumo ao morrer |
 | [diagnostico-de-crashes.md](diagnostico-de-crashes.md) | Validade de donos de projéteis e cache de wall props |
+| [economia.md](economia.md) | Valores, loja, baú, forja, venda e modo debug |
 | [balanceamento.md](balanceamento.md) | Metas de balanceamento da demo (proposta): ritmo, economia e combate |
 | [armas.md](armas.md) | Armas: dano, cadência, crítico, DPS por raridade e pontos de ajuste manual |
 

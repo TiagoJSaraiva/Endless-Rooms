@@ -57,8 +57,8 @@ struct ItemDefinition {
     ItemCategory category{ItemCategory::None};
     std::string description;
     int rarity{1};
-    int baseValue{0};
     int value{0};
+    bool debugOnly{false}; // Só existe no modo debug (debug.txt): fora dele não entra em loja, baú nem equipamento inicial
     const WeaponBlueprint* weaponBlueprint{nullptr};
     PlayerAttributes attributeBonuses{};
     std::string inventorySpritePath;
@@ -97,7 +97,8 @@ struct InventoryUIState {
     int shopTradeShopIndex{-1};
     int coins{125};
     int shopRollsLeft{1};
-    float sellPriceMultiplier{0.2f}; // Base sell multiplier; meta progression can scale this later
+    bool debugMode{false}; // Modo debug da run (debug.txt); define se itens debugOnly entram nos pools
+    float sellPriceMultiplier{0.3f}; // Multiplicador base de venda (InventoryRules::kBaseSellMultiplier); meta-progressão pode escalar depois
     bool forgeEditingCost{false};
     std::array<int, 2> forgeInputIds{0, 0};
     std::array<std::string, 2> forgeInputNames{};
@@ -148,7 +149,8 @@ struct InventoryUIState {
 };
 
 // Preenche o estado com dados fictícios enquanto o conteúdo real não existe.
-void InitializeInventoryUIDummyData(InventoryUIState& state);
+// Com debugMode, o Kit do Testador começa equipado e entra nos pools de loja e baú.
+void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode = false);
 // Renderiza o painel completo, incluindo informações do jogador e lojas ativas.
 void RenderInventoryUI(InventoryUIState& state,
                        const PlayerCharacter& player,

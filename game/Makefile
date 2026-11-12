@@ -46,6 +46,8 @@ REWARD_POUCH_RENDER_TEST_BIN = tests/reward_pouch_render_tests$(EXT)
 LIGHTING_RULES_TEST_BIN = tests/lighting_rules_tests$(EXT)
 RUN_STATS_TEST_BIN = tests/run_stats_tests$(EXT)
 WEAPON_RULES_TEST_BIN = tests/weapon_rules_tests$(EXT)
+DEBUG_CONFIG_TEST_BIN = tests/debug_config_tests$(EXT)
+ECONOMY_TEST_BIN   = tests/economy_tests$(EXT)
 RAYLIB_VERSION     := 5.5.0
 RAYLIB_API_VERSION := 550
 RAYLIB_PATH        := vendor/raylib
@@ -385,7 +387,7 @@ raylib_build:
 # Default target entry
 all: $(PROJECT_NAME)
 
-test: $(TEST_BIN) $(FLOOR_TEST_BIN) $(WALL_TEST_BIN) $(ROOM_GENERATION_TEST_BIN) $(ROOM_COLLISION_TEST_BIN) $(PROP_RULES_TEST_BIN) $(PROP_COMBAT_TEST_BIN) $(PROP_GAMEPLAY_TEST_BIN) $(REWARD_POUCH_RULES_TEST_BIN) $(REWARD_POUCH_GAMEPLAY_TEST_BIN) $(WALL_PROP_RULES_TEST_BIN) $(PROJECTILE_LIFETIME_TEST_BIN) $(PROJECTILE_WALL_TEST_BIN) $(LIGHTING_RULES_TEST_BIN) $(RUN_STATS_TEST_BIN) $(WEAPON_RULES_TEST_BIN)
+test: $(TEST_BIN) $(FLOOR_TEST_BIN) $(WALL_TEST_BIN) $(ROOM_GENERATION_TEST_BIN) $(ROOM_COLLISION_TEST_BIN) $(PROP_RULES_TEST_BIN) $(PROP_COMBAT_TEST_BIN) $(PROP_GAMEPLAY_TEST_BIN) $(REWARD_POUCH_RULES_TEST_BIN) $(REWARD_POUCH_GAMEPLAY_TEST_BIN) $(WALL_PROP_RULES_TEST_BIN) $(PROJECTILE_LIFETIME_TEST_BIN) $(PROJECTILE_WALL_TEST_BIN) $(LIGHTING_RULES_TEST_BIN) $(RUN_STATS_TEST_BIN) $(DEBUG_CONFIG_TEST_BIN) $(ECONOMY_TEST_BIN) $(WEAPON_RULES_TEST_BIN)
 	$(TEST_BIN)
 	$(FLOOR_TEST_BIN)
 	$(WALL_TEST_BIN)
@@ -401,7 +403,12 @@ test: $(TEST_BIN) $(FLOOR_TEST_BIN) $(WALL_TEST_BIN) $(ROOM_GENERATION_TEST_BIN)
 	$(PROJECTILE_WALL_TEST_BIN)
 	$(LIGHTING_RULES_TEST_BIN)
 	$(RUN_STATS_TEST_BIN)
+	$(DEBUG_CONFIG_TEST_BIN)
+	$(ECONOMY_TEST_BIN)
 	$(WEAPON_RULES_TEST_BIN)
+
+$(DEBUG_CONFIG_TEST_BIN): tests/debug_config_tests.cpp src/debug_config.cpp src/debug_config.h
+	$(CC) -o $@ tests/debug_config_tests.cpp src/debug_config.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
 
 $(RUN_STATS_TEST_BIN): tests/run_stats_tests.cpp src/run_stats.cpp src/room.cpp $(wildcard src/*.h)
 	$(CC) -o $@ tests/run_stats_tests.cpp src/run_stats.cpp src/room.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
@@ -411,6 +418,11 @@ $(LIGHTING_RULES_TEST_BIN): tests/lighting_rules_tests.cpp src/lighting_rules.cp
 
 $(REWARD_POUCH_RULES_TEST_BIN): tests/reward_pouch_rules_tests.cpp src/reward_pouch.cpp src/reward_pouch.h
 	$(CC) -o $@ tests/reward_pouch_rules_tests.cpp src/reward_pouch.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
+
+# Economia: usa o catálogo real de itens, então liga ui_inventory.cpp (sem abrir janela).
+ECONOMY_SOURCES = src/ui_inventory.cpp src/inventory_rules.cpp src/inventory_operations.cpp src/raygui_impl.cpp src/font_manager.cpp src/chest.cpp src/weapon_blueprints.cpp src/player.cpp src/room.cpp
+$(ECONOMY_TEST_BIN): tests/economy_tests.cpp $(ECONOMY_SOURCES) $(wildcard src/*.h) raylib_build
+	$(CC) -o $@ tests/economy_tests.cpp $(ECONOMY_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
 PROP_COMBAT_SOURCES = src/projectile.cpp src/projectile_melee.cpp src/projectile_ranged.cpp src/combat_geometry.cpp
 PROP_GAMEPLAY_SOURCES = $(PROP_COMBAT_SOURCES) src/enemy.cpp src/enemy_common.cpp src/enemy_spawner.cpp src/weapon_blueprints.cpp src/player.cpp src/prop.cpp src/prop_rules.cpp src/room.cpp src/room_collision_rules.cpp
@@ -543,10 +555,12 @@ clean:
 	@cmd /C "if exist tests\projectile_wall_tests$(EXT) del /Q tests\projectile_wall_tests$(EXT)"
 	@cmd /C "if exist tests\lighting_rules_tests$(EXT) del /Q tests\lighting_rules_tests$(EXT)"
 	@cmd /C "if exist tests\run_stats_tests$(EXT) del /Q tests\run_stats_tests$(EXT)"
+	@cmd /C "if exist tests\debug_config_tests$(EXT) del /Q tests\debug_config_tests$(EXT)"
+	@cmd /C "if exist tests\economy_tests$(EXT) del /Q tests\economy_tests$(EXT)"
 	@echo Cleaning project build outputs
 else
 clean:
-	$(RM) -f $(WALL_PROP_RULES_TEST_BIN) $(WALL_PROP_RENDER_TEST_BIN) $(PROJECTILE_LIFETIME_TEST_BIN) $(PROJECTILE_WALL_TEST_BIN) $(LIGHTING_RULES_TEST_BIN) $(RUN_STATS_TEST_BIN) $(WEAPON_RULES_TEST_BIN)
+	$(RM) -f $(WALL_PROP_RULES_TEST_BIN) $(WALL_PROP_RENDER_TEST_BIN) $(PROJECTILE_LIFETIME_TEST_BIN) $(PROJECTILE_WALL_TEST_BIN) $(LIGHTING_RULES_TEST_BIN) $(RUN_STATS_TEST_BIN) $(DEBUG_CONFIG_TEST_BIN) $(ECONOMY_TEST_BIN) $(WEAPON_RULES_TEST_BIN)
 	$(RM) -f $(OBJ_DIR)/*.o $(PROJECT_NAME)$(EXT) $(TEST_BIN) $(FLOOR_TEST_BIN) $(FLOOR_RENDER_TEST_BIN) $(WALL_TEST_BIN) $(WALL_RENDER_TEST_BIN) $(ROOM_GENERATION_TEST_BIN) $(ROOM_COLLISION_TEST_BIN) $(PROP_RULES_TEST_BIN) $(PROP_COMBAT_TEST_BIN) $(PROP_RENDER_TEST_BIN) $(PROP_GAMEPLAY_TEST_BIN) $(REWARD_POUCH_RULES_TEST_BIN) $(REWARD_POUCH_GAMEPLAY_TEST_BIN) $(REWARD_POUCH_RENDER_TEST_BIN) $(RAYLIB_SRC_PATH)/*.o $(RAYLIB_SRC_PATH)/libraylib.a $(RAYLIB_SRC_PATH)/libraylib.web.a $(RAYLIB_SRC_PATH)/raygui.c $(RAYLIB_SRC_PATH)/*-protocol.h $(RAYLIB_SRC_PATH)/*-protocol-code.h
 	@echo Cleaning project build outputs
 endif

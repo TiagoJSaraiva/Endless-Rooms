@@ -40,10 +40,8 @@ namespace {
 // Valores padrão para feedback visual e parametrizações das listas.
 constexpr float kFeedbackDuration = 2.5f;
 constexpr float kBodyTextSpacing = 2.0f;
-constexpr int kDefaultShopStock = 1; // Non-consumables default to a single copy
-constexpr int kConsumableShopMinStock = 2;
-constexpr int kConsumableShopMaxStock = 7;
-constexpr int kShopSlotCount = 4;
+constexpr int kShopSlotCount = InventoryRules::kShopSlotCount;
+constexpr int kDebugKitEquipmentSlots = 4; // Os 4 slots de equipamento recebem o Kit no modo debug
 constexpr float kInventorySpritePadding = 0.0f;
 
 struct InventorySpriteCacheEntry {
@@ -709,6 +707,8 @@ Color ResolveBorderColor(const InventoryUIState& state, int itemId) {
     return RarityToColor(rarity);
 }
 
+bool DetermineForgeOutcome(const InventoryUIState& state, int& resultId, int& resultQuantity);
+
 void RefreshForgeChance(InventoryUIState& state) {
     if (state.forgeState == ForgeState::Broken) {
         state.forgeSuccessChance = 0.0f;
@@ -720,17 +720,14 @@ void RefreshForgeChance(InventoryUIState& state) {
         return;
     }
 
-    int valueA = GetItemValue(state, state.forgeInputIds[0]);
-    int valueB = GetItemValue(state, state.forgeInputIds[1]);
-    int totalValue = valueA + valueB;
-    if (totalValue <= 0) {
+    // A chance depende do valor do item que a receita produz (não dos ingredientes).
+    int resultId = 0;
+    int resultQuantity = 0;
+    if (!DetermineForgeOutcome(state, resultId, resultQuantity)) {
         state.forgeSuccessChance = 0.0f;
         return;
     }
-
-    float invested = static_cast<float>(std::max(0, state.forgeBaseCost));
-    float ratio = invested / static_cast<float>(totalValue);
-    state.forgeSuccessChance = std::clamp(ratio, 0.0f, 1.0f);
+    state.forgeSuccessChance = InventoryRules::ForgeSuccessChance(state.forgeBaseCost, GetItemValue(state, resultId));
 }
 
 std::string ItemNameFromId(const InventoryUIState& state, int id) {
@@ -839,50 +836,21 @@ void RollShopInventoryInternal(InventoryUIState& state, ShopInstance* shop = nul
     state.shopStock.assign(kShopSlotCount, 0);
     ResetShopTradeState(state);
 
-    std::vector<int> availableIndices;
-    availableIndices.reserve(state.items.size());
-    for (int i = 0; i < static_cast<int>(state.items.size()); ++i) {
-        if (state.items[i].id > 0) {
-            availableIndices.push_back(i);
-        }
-    }
-
-    std::mt19937_64 shopRng;
-    bool useShopRng = (shop != nullptr);
-    if (useShopRng) {
-        shopRng.seed(shop->CurrentSeed());
-    }
+    // A vitrine de uma loja é determinística pela semente da loja (re-roll muda a semente).
+    // Sem loja ligada (inicialização), usa uma semente aleatória.
+    std::mt19937_64 shopRng(shop != nullptr ? shop->CurrentSeed() : std::random_device{}());
+    const std::vector<InventoryRules::ShopSlotRoll> rolled =
+        InventoryRules::RollShopSlots(state.items, state.debugMode, shopRng);
 
     for (int slot = 0; slot < kShopSlotCount; ++slot) {
-        if (availableIndices.empty()) {
+        if (slot >= static_cast<int>(rolled.size())) {
             SetShopSlot(state, slot, 0, 0, 0);
             continue;
         }
-
-        int pickIndex = 0;
-        if (useShopRng) {
-            std::uniform_int_distribution<int> dist(0, static_cast<int>(availableIndices.size()) - 1);
-            pickIndex = dist(shopRng);
-        } else {
-            pickIndex = GetRandomValue(0, static_cast<int>(availableIndices.size()) - 1);
-        }
-
-        int itemIndex = availableIndices[pickIndex];
-        const ItemDefinition& def = state.items[itemIndex];
-        int price = static_cast<int>(std::round(def.value * 1.3f));
-        int finalPrice = (price <= 0) ? def.value : price;
-        int stock = kDefaultShopStock;
-        if (def.category == ItemCategory::Consumable) {
-            if (useShopRng) {
-                std::uniform_int_distribution<int> stockDist(kConsumableShopMinStock, kConsumableShopMaxStock);
-                stock = stockDist(shopRng);
-            } else {
-                stock = GetRandomValue(kConsumableShopMinStock, kConsumableShopMaxStock);
-            }
-        }
-
-        SetShopSlot(state, slot, def.id, finalPrice, stock);
-        availableIndices.erase(availableIndices.begin() + pickIndex);
+        const InventoryRules::ShopSlotRoll& entry = rolled[static_cast<size_t>(slot)];
+        const ItemDefinition* def = FindItemDefinition(state, entry.itemId);
+        const int price = (def != nullptr) ? InventoryRules::BuyPrice(def->value) : 0;
+        SetShopSlot(state, slot, entry.itemId, price, entry.stock);
     }
 
     if (shop != nullptr) {
@@ -1012,9 +980,7 @@ int CalculateSaleValue(const InventoryUIState& state, int itemId, int quantity =
     if (def == nullptr || def->value <= 0) {
         return 0;
     }
-    float multiplier = std::max(0.0f, state.sellPriceMultiplier);
-    float totalValue = static_cast<float>(def->value) * static_cast<float>(quantity) * multiplier;
-    return static_cast<int>(std::round(totalValue));
+    return InventoryRules::SaleValue(def->value, quantity, state.sellPriceMultiplier);
 }
 
 constexpr int kMythicRarity = 6;
@@ -1769,58 +1735,18 @@ void EnsureCommonChestLoot(CommonChest& chest, const InventoryUIState& state) {
         slot.quantity = 0;
     }
 
-    std::vector<const ItemDefinition*> lootPool;
-    lootPool.reserve(state.items.size());
-    for (const ItemDefinition& def : state.items) {
-        if (def.id <= 0) {
-            continue;
-        }
-        if (def.category == ItemCategory::None) {
-            continue;
-        }
-        lootPool.push_back(&def);
-    }
-
-    if (lootPool.empty()) {
-        chest.MarkGenerated();
-        return;
-    }
-
+    // Conteúdo sorteado por regra pura (peso de raridade); aqui só se escolhe em quais slots cai.
     std::mt19937_64 rng(chest.LootSeed());
+    const std::vector<InventoryRules::ChestLootEntry> loot =
+        InventoryRules::RollChestLoot(state.items, state.debugMode, rng);
 
     std::vector<int> slotIndices(static_cast<size_t>(chest.Capacity()));
     std::iota(slotIndices.begin(), slotIndices.end(), 0);
     std::shuffle(slotIndices.begin(), slotIndices.end(), rng);
 
-    int maxSlotsToFill = std::min(static_cast<int>(slotIndices.size()), 3);
-    maxSlotsToFill = std::max(1, maxSlotsToFill);
-    std::uniform_int_distribution<int> countDist(1, maxSlotsToFill);
-    int slotsToFill = std::min(countDist(rng), static_cast<int>(slotIndices.size()));
-
-    if (slotsToFill <= 0) {
-        chest.MarkGenerated();
-        return;
-    }
-
-    std::uniform_int_distribution<int> poolDist(0, static_cast<int>(lootPool.size()) - 1);
-
-    for (int i = 0; i < slotsToFill; ++i) {
-        int slotIndex = slotIndices[static_cast<size_t>(i)];
-        const ItemDefinition* def = lootPool[static_cast<size_t>(poolDist(rng))];
-        if (def == nullptr) {
-            continue;
-        }
-
-        int quantity = 1;
-        if (def->category == ItemCategory::Consumable) {
-            std::uniform_int_distribution<int> qtyDist(1, std::min(3, InventoryRules::MaxStackForCategory(def->category)));
-            quantity = qtyDist(rng);
-        } else if (def->category == ItemCategory::Material) {
-            std::uniform_int_distribution<int> qtyDist(2, std::min(6, InventoryRules::MaxStackForCategory(def->category)));
-            quantity = qtyDist(rng);
-        }
-
-        chest.SetSlot(slotIndex, def->id, quantity);
+    const size_t slotsToFill = std::min(loot.size(), slotIndices.size());
+    for (size_t i = 0; i < slotsToFill; ++i) {
+        chest.SetSlot(slotIndices[i], loot[i].itemId, loot[i].quantity);
     }
 
     chest.MarkGenerated();
@@ -1982,7 +1908,8 @@ void StoreShopContents(const InventoryUIState& state, ShopInstance& shop) {
     }
 }
 
-void InitializeInventoryUIDummyData(InventoryUIState& state) {
+void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
+    state.debugMode = debugMode;
     state.items.clear();
     state.itemNameToId.clear();
     state.weaponSlotIds.clear();
@@ -1999,7 +1926,7 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
     state.shopPrices.clear();
     state.shopTypes.clear();
     state.shopStock.clear();
-    state.sellPriceMultiplier = 0.2f; // Reset base sell rate when seeding dummy data
+    state.sellPriceMultiplier = InventoryRules::kBaseSellMultiplier; // Reinicia a taxa base de venda a cada run
     state.forgeBaseCost = 0;
     state.forgeSuccessChance = 0.0f;
     state.forgeState = ForgeState::Working;
@@ -2024,7 +1951,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
                        ItemCategory category,
                        const char* description,
                        int rarity,
-                       int baseValue,
                        const WeaponBlueprint* blueprint = nullptr,
                        const PlayerAttributes& bonuses = PlayerAttributes{},
                        const char* spritePath = nullptr,
@@ -2036,8 +1962,7 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         def.category = category;
         def.description = description;
         def.rarity = std::max(1, rarity);
-        def.baseValue = std::max(0, baseValue);
-        def.value = InventoryRules::CalculateItemPrice(def.rarity, def.baseValue);
+        def.value = InventoryRules::ItemValue(def.category, def.rarity);
         def.weaponBlueprint = blueprint;
         def.attributeBonuses = bonuses;
         if (spritePath != nullptr) {
@@ -2051,15 +1976,12 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         state.itemNameToId[name] = id;
     };
 
-    constexpr int kCommonBaseValue = 20;
-    auto commonValue = [&](int delta) { return kCommonBaseValue + std::max(0, delta); };
-
-    addItem(1,  "Espada Curta",        ItemCategory::Weapon,      "Lamina equilibrada para iniciantes.", 2, 80,  &GetEspadaCurtaWeaponBlueprint());
-    addItem(2,  "Machadinha",          ItemCategory::Weapon,      "Machado leve de uma mao.",        2, 70,  &GetMachadinhaWeaponBlueprint());
-    addItem(3,  "Arco Simples",        ItemCategory::Weapon,      "Arco feito de madeira tratada.",  2, 100, &GetArcoSimplesWeaponBlueprint());
-    addItem(4,  "Cajado de Carvalho",  ItemCategory::Weapon,      "Canaliza energia natural.",       3, 100, &GetCajadoDeCarvalhoWeaponBlueprint());
-    addItem(21, "Broquel",             ItemCategory::Weapon,      "Escudo curto reforcado para contra-ataques.", 3, 90, &GetBroquelWeaponBlueprint());
-    addItem(19, "Espada Runica",       ItemCategory::Weapon,      "Lamina encantada pelas runas.",    5, 320, &GetEspadaRunicaWeaponBlueprint());
+    addItem(1,  "Espada Curta",        ItemCategory::Weapon,      "Lamina equilibrada para iniciantes.", 2, &GetEspadaCurtaWeaponBlueprint());
+    addItem(2,  "Machadinha",          ItemCategory::Weapon,      "Machado leve de uma mao.",        2, &GetMachadinhaWeaponBlueprint());
+    addItem(3,  "Arco Simples",        ItemCategory::Weapon,      "Arco feito de madeira tratada.",  2, &GetArcoSimplesWeaponBlueprint());
+    addItem(4,  "Cajado de Carvalho",  ItemCategory::Weapon,      "Canaliza energia natural.",       3, &GetCajadoDeCarvalhoWeaponBlueprint());
+    addItem(21, "Broquel",             ItemCategory::Weapon,      "Escudo curto reforcado para contra-ataques.", 3, &GetBroquelWeaponBlueprint());
+    addItem(19, "Espada Runica",       ItemCategory::Weapon,      "Lamina encantada pelas runas.",    5, &GetEspadaRunicaWeaponBlueprint());
 
     constexpr int kCommonRarity = 1;
     const int idFarrapo = 100;
@@ -2083,7 +2005,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Material,
         "Restos de tecidos gastos e desbotados pelo tempo. Ainda que simples, podem ser costurados novamente e servir como base para algumas vestimentas.",
         kCommonRarity,
-        commonValue(0),
         nullptr,
         PlayerAttributes{},
     "assets/img/itens/Farrapo.png",
@@ -2094,7 +2015,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Material,
         "Um pedaco fino e resistente de couro curtido. Muito util na confeccao de protecoes leves ou para reforcar costuras em equipamentos simples.",
         kCommonRarity,
-        commonValue(0),
         nullptr,
     PlayerAttributes{},
     "assets/img/itens/Tira_de_couro.png",
@@ -2105,7 +2025,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Material,
     "Uma barra solida de bronze fundido. Sua liga equilibrada garante boa durabilidade sem exigir forja avancada - ideal para armas e armaduras simples.",
         kCommonRarity,
-        commonValue(0),
         nullptr,
     PlayerAttributes{},
     "assets/img/itens/Lingote_de_bronze.png",
@@ -2122,11 +2041,11 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Armor,
         "Equipamento de alta qualidade, usado pra testar jogos que ainda nao estao bem balanceados.",
         5,
-        5,
     nullptr,
     kitDoTestador,
     "assets/img/itens/Kit_do_Testador.png",
     Vector2{56.0f, 56.0f});
+    state.items.back().debugOnly = true;
 
     PlayerAttributes tunicaBonus{};
     tunicaBonus.primary.vigor = 2;
@@ -2135,7 +2054,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Armor,
         "Uma veste simples feita de farrapos costurados. Nao oferece protecao, mas e confortavel.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     tunicaBonus,
     "assets/img/itens/Tunica.png",
@@ -2148,7 +2066,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Armor,
         "Botas rudimentares feitas de tecido e couro leve. Melhor do que andar descalco.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     calcadosBonus,
     "assets/img/itens/Calcados_simples.png",
@@ -2162,7 +2079,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Armor,
         "Um elmo basico moldado em bronze. Leve e confiavel.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     elmoBonus,
     "assets/img/itens/Elmo_de_bronze.png",
@@ -2181,7 +2097,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Armor,
         "Uma peca robusta feita de camadas costuradas de couro. Simples, mas eficaz.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     coleteBonus,
     "assets/img/itens/Colete_de_couro.png",
@@ -2195,7 +2110,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Armor,
         "Ombreiras de bronze presas por tiras de couro, garantindo mobilidade sem sacrificar protecao.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     espaldeiraBonus,
     "assets/img/itens/Espaldeira_de_bronze.png",
@@ -2209,7 +2123,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Armor,
         "Um pequeno amuleto de bronze. Diz-se que ajuda a clarear a mente e manter o foco.",
         kCommonRarity,
-        commonValue(10),
     nullptr,
     pingenteBonus,
     "assets/img/itens/Pingente_de_bronze.png",
@@ -2223,7 +2136,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Armor,
         "Talisma furtivo que pulsa com magia rubra, facilitando golpes furtivos e esquivas improvaveis.",
         4,
-        120,
         nullptr,
         amuletoSorrateiroBonus,
         "assets/img/itens/Amuleto_do_Sorrateiro.png",
@@ -2237,7 +2149,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Armor,
         "Placas negras que absorvem parte dos impactos, mas sussurram maldicoes antigas ao usuario.",
         4,
-        140,
         nullptr,
         couracaCaidoBonus,
         "assets/img/itens/Couraca_do_caido.png",
@@ -2248,7 +2159,6 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
         ItemCategory::Consumable,
         "Elixir alquimico de emergencia que restaura uma porcao generosa da vitalidade.",
         1,
-        20,
         nullptr,
         PlayerAttributes{},
         "assets/img/itens/Pocao_de_cura.png",
@@ -2258,10 +2168,11 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
     EnsureWeaponCapacity(state, 2);
     SetWeaponSlot(state, 0, 1);
     SetWeaponSlot(state, 1, 3);
-    SetEquipmentSlot(state, 0, idkitDoTestador);
-    SetEquipmentSlot(state, 1, idkitDoTestador);
-    SetEquipmentSlot(state, 2, idkitDoTestador);
-    SetEquipmentSlot(state, 3, idkitDoTestador);
+    if (debugMode) {
+        for (int slot = 0; slot < kDebugKitEquipmentSlots; ++slot) {
+            SetEquipmentSlot(state, slot, idkitDoTestador);
+        }
+    }
 
     EnsureEquipmentCapacity(state, 5);
 

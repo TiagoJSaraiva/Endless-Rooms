@@ -108,5 +108,6 @@ Regras:
 - Não adicione objetos, executáveis ou bibliotecas geradas ao Git: `game/obj/`, `*.exe`, executáveis de `game/tests/` e saídas de build de `game/vendor/raylib/src/` são artefatos locais.
 - `game/Makefile`: `clean` remove apenas saídas de build do projeto e da raylib vendorizada.
 - `game/biome.txt` é configuração local de teste (força o bioma da run) e não é versionado.
+- `game/debug.txt` é configuração local de teste (`true` liga o modo debug: Kit do Testador equipado e nos pools de loja e baú) e não é versionado.
 - `anotacoes/` é pessoal e ignorada pelo Git; não a publique nem altere sem pedido explícito.
 - Validação jogando: não há ferramenta para rodar e observar o jogo; quando necessário, peça ao desenvolvedor para rodar `game.exe` e reportar.
