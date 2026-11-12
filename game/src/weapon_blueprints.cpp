@@ -32,7 +32,7 @@ ProjectileBlueprint MakeBroquelProjectileBlueprint() {
     blueprint.common.projectileSpritePath = "assets/img/weapons/Broquel.png"; // Sprite renderizado a frente do jogador
     blueprint.common.projectileRotationOffsetDegrees = 180.0f; // Mantem o broquel virado na direção correta
     blueprint.common.projectileForwardOffset = radius; // Empurra o sprite um pouco para fora do corpo do jogador
-    blueprint.common.perTargetHitCooldownSeconds = 0.45f; // Pequeno intervalo de invulnerabilidade por alvo
+    blueprint.common.perTargetHitCooldownSeconds = 0.8f; // Maior que a vida do golpe (0,75 s): um acerto por batida em cada alvo
 
     blueprint.blunt.radius = radius; // Distancia do centro da hitbox ate o centro do escudo
     blueprint.blunt.travelDegrees = 0.0f; // Permanece alinhado ao alvo durante a batida
@@ -51,7 +51,7 @@ WeaponBlueprint MakeBroquelWeaponBlueprint() {
     blueprint.cooldownSeconds = 0.9f; // Base interval between attacks before cadence modifiers
     blueprint.holdToFire = false; // Single tap triggers the bash; holding does not repeat automatically
     blueprint.attributeKey = WeaponAttributeKey::Constitution; // Shield scales with the user's Constitution stat
-    blueprint.damage.baseDamage = 10.0f; // Flat damage applied even with zero Constitution
+    blueprint.damage.baseDamage = 43.0f; // Flat damage applied even with zero Constitution (golpe lento: ~26 DPS, ver docs/sistemas/armas.md)
     blueprint.damage.attributeScaling = 1.5f; // Additional damage gained per Constitution point
     blueprint.cadence.baseAttacksPerSecond = 0.6f; // Broquel is intentionally slow to swing
     blueprint.cadence.dexterityGainPerPoint = 0.18f; // Dexterity increases bash frequency modestly
@@ -202,7 +202,7 @@ WeaponBlueprint MakeEspadaRunicaWeaponBlueprint() {
     blueprint.cooldownSeconds = 2.6f; // Base downtime before another rune spin is ready
     blueprint.holdToFire = false; // Requires deliberate activation
     blueprint.attributeKey = WeaponAttributeKey::Mysticism; // Rune blade scales with magical prowess
-    blueprint.damage.baseDamage = 20.0f; // Substantial base damage even without attributes
+    blueprint.damage.baseDamage = 32.5f; // Substantial base damage even without attributes
     blueprint.damage.attributeScaling = 2.4f; // High scaling to reward invested Mysticism
     blueprint.cadence.baseAttacksPerSecond = 0.55f; // Slow attack rate befitting a heavy finisher
     blueprint.cadence.dexterityGainPerPoint = 0.06f; // Dexterity slightly trims the downtime
@@ -325,7 +325,7 @@ WeaponBlueprint MakeCajadoDeCarvalhoWeaponBlueprint() {
     blueprint.holdToFire = true; // Each pulse needs a tap; hold-to-channel can be added later
     blueprint.usesSeparateProjectileSprite = true; // Arma e projetil possuem sprites distintos
     blueprint.attributeKey = WeaponAttributeKey::Knowledge; // Damage scales with Knowledge for casters
-    blueprint.damage.baseDamage = 2.0f; // Base damage per beam tick
+    blueprint.damage.baseDamage = 6.0f; // Base damage per beam tick
     blueprint.damage.attributeScaling = 1.9f; // Strong scaling to emphasize spellcasting stats
     blueprint.cadence.baseAttacksPerSecond = 1.6f; // Moderate fire rate suitable for a staff
     blueprint.cadence.dexterityGainPerPoint = 0.08f; // Dexterity slightly speeds up pulses
