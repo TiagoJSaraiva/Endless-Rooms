@@ -63,7 +63,5 @@ private:
     std::uint64_t layoutRevision_{0};
     std::uint64_t wallPropsRevision_{0};
     int roomsDiscovered_{0};
-    bool bossSpawned_{false};
-    int roomsSinceBoss_{0};
     BiomeType activeBiome_{BiomeType::Unknown};
 };

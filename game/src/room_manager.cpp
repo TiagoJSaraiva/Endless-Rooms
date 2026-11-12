@@ -23,6 +23,18 @@ constexpr int MIN_ROOM_SPACING_TILES = 2;
 constexpr int MIN_CORRIDOR_LENGTH_TILES = MIN_ROOM_SPACING_TILES * 2;
 constexpr int MAX_CORRIDOR_LENGTH_TILES = MIN_CORRIDOR_LENGTH_TILES + 2;
 
+// Peso relativo de cada tipo de sala sorteável. Boss fica fora até a sala de boss ser retomada.
+struct RoomTypeWeight {
+    RoomType type;
+    double weight;
+};
+constexpr std::array<RoomTypeWeight, 4> kRoomTypeWeights{{
+    {RoomType::Normal, 79.0},
+    {RoomType::Forge, 5.0}, // ajustar para mudar a frequência de forjas
+    {RoomType::Shop, 5.0},
+    {RoomType::Chest, 5.0},
+}};
+
 int RandomEvenInt(std::mt19937_64& rng, int minInclusive, int maxInclusive) {
     const int firstEven = (minInclusive % 2 == 0) ? minInclusive : minInclusive + 1;
     const int lastEven = (maxInclusive % 2 == 0) ? maxInclusive : maxInclusive - 1;
@@ -779,54 +791,26 @@ void RoomManager::AlignWithNeighbor(Room& room, Direction direction, Room& neigh
 RoomType RoomManager::PickRoomType(const RoomCoords& coords) {
     std::mt19937_64 rng(MakeRoomSeed(worldSeed_, coords, static_cast<std::uint64_t>(roomsDiscovered_)));
 
-    double bossChance = 0.0;
-    double normalChance = 5.0;
-
-    if (!bossSpawned_) {
-        normalChance = std::max(0.0, 79.0 - 0.5 * roomsSinceBoss_);
-        bossChance = 1.0 + 0.5 * roomsSinceBoss_;
+    double total = 0.0;
+    for (const RoomTypeWeight& entry : kRoomTypeWeights) {
+        total += entry.weight;
     }
 
-    const double forgeChance = 5.0; // ALTERAR NO FUTURO PARA AJUSTAR A FREQUENCIA DE FORGE
-    const double shopChance = 5.0;
-    const double chestChance = 5.0;
-
-    double total = normalChance + forgeChance + shopChance + chestChance + bossChance;
     double pick = RandomDouble(rng, 0.0, total);
-
-    if (pick < normalChance) {
-        return RoomType::Normal;
-    }
-    pick -= normalChance;
-
-    if (pick < forgeChance) {
-        return RoomType::Forge;
-    }
-    pick -= forgeChance;
-
-    if (pick < shopChance) {
-        return RoomType::Shop;
-    }
-    pick -= shopChance;
-
-    if (pick < chestChance) {
-        return RoomType::Chest;
+    for (const RoomTypeWeight& entry : kRoomTypeWeights) {
+        if (pick < entry.weight) {
+            return entry.type;
+        }
+        pick -= entry.weight;
     }
 
-    return RoomType::Boss;
+    // Só alcançado por arredondamento de ponto flutuante no limite superior.
+    return kRoomTypeWeights.front().type;
 }
 
-// Atualiza contadores para balancear frequência de salas especiais/boss.
-void RoomManager::RegisterRoomDiscovery(RoomType type) {
+// Conta salas descobertas; o contador compõe a seed do sorteio de tipo.
+void RoomManager::RegisterRoomDiscovery(RoomType) {
     ++roomsDiscovered_;
-    if (!bossSpawned_) {
-        if (type == RoomType::Boss) {
-            bossSpawned_ = true;
-            roomsSinceBoss_ = 0;
-        } else {
-            ++roomsSinceBoss_;
-        }
-    }
 }
 
 // Decide bioma da nova sala com base no bioma ativo/lobby.
