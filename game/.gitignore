@@ -24,6 +24,7 @@
 /tests/projectile_lifetime_tests
 /tests/lighting_rules_tests
 /tests/run_stats_tests
+/tests/room_simulation_tests
 /tests/projectile_wall_tests
 /tests/weapon_rules_tests
 /tests/debug_config_tests
