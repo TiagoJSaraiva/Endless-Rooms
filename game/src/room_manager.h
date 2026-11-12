@@ -28,6 +28,9 @@ public:
     std::uint64_t GetWorldSeed() const { return worldSeed_; }
     RoomCoords GetCurrentCoords() const { return currentRoomCoords_; }
 
+    // Simulações headless de layout/tipos desligam os props (caros e sem efeito no sorteio de salas).
+    void SetPropsEnabled(bool enabled) { propsEnabled_ = enabled; }
+
     const auto& Rooms() const { return rooms_; }
     const std::vector<WallPropInstance>& WallProps() const { return wallProps_; }
     std::uint64_t GetLayoutRevision() const { return layoutRevision_; }
@@ -62,6 +65,7 @@ private:
     std::vector<WallPropInstance> wallProps_;
     std::uint64_t layoutRevision_{0};
     std::uint64_t wallPropsRevision_{0};
+    bool propsEnabled_{true};
     int roomsDiscovered_{0};
     BiomeType activeBiome_{BiomeType::Unknown};
 };

@@ -29,6 +29,9 @@ struct RoomTypeWeight {
     RoomType type;
     double weight;
 };
+// Antes, o boss tinha chance crescente por sala (peso − 0,5 por sala),
+// removida junto com a sala de boss na demo. Quando o boss voltar, será preciso reintroduzir
+// uma chance que cresça com o avanço da run, de forma melhor que a antiga.
 constexpr std::array<RoomTypeWeight, 4> kRoomTypeWeights{{
     {RoomType::Normal, 79.0},
     {RoomType::Forge, 5.0}, // ajustar para mudar a frequência de forjas
@@ -355,7 +358,7 @@ void RoomManager::EnsureNeighborsGenerated(const RoomCoords& coords, int radius)
     std::unordered_set<RoomCoords, RoomCoordsHash> visited;
     EnsureNeighborsRecursive(coords, radius, visited);
     for (auto& entry : rooms_) {
-        if (entry.second->DoorsInitialized()) PropRules::Initialize(*entry.second);
+        if (propsEnabled_ && entry.second->DoorsInitialized()) PropRules::Initialize(*entry.second);
     }
     if (wallPropsRevision_ == layoutRevision_) return;
     std::vector<WallRules::RoomView> wallRooms;
