@@ -192,7 +192,14 @@ Loja, baú e forja:
 
 ### Pesos de tipos de sala
 
-Mantidos: Normal 79, Forge 5, Shop 5, Chest 5 (84% / 5,3% cada). Cada porta gera uma sala na hora (~2,5 salas novas por sala visitada; ~30 geradas em 12 visitas): P(ao menos uma Shop entre 30) ≈ 80%. A simulação de seeds (1.9c) confere a meta de 70% de runs com loja visível até a 10ª sala visitada. Se ficar abaixo, subir para Normal 70 / Shop 10 / Forge 10 / Chest 10.
+Mantidos: Normal 79, Forge 5, Shop 5, Chest 5 (84% / 5,3% cada). Cada porta gera uma sala na hora (~2,5 salas novas por sala visitada; ~30 geradas em 12 visitas): P(ao menos uma Shop entre 30) ≈ 80%. Resultado da simulação de seeds (1.9c, `room_simulation_tests`, 500 runs, 10 salas visitadas; ~4 salas geradas por sala visitada):
+
+| Pesos | Loja visível | Forja visível | Baú visível |
+|---|---:|---:|---:|
+| 79/5/5/5 (vigente) | 70,0% | 65,8% | 63,6% |
+| 70/10/10/10 (alternativa) | 89,0% | 87,4% | 86,0% |
+
+Os pesos vigentes atingem a meta no limite exato (70,0%), e o teste trava ≥ 70%. Qualquer mudança na geração pode derrubá-lo; a alternativa dá folga e cabe ao desenvolvedor decidir.
 
 ## Atributos dos inimigos (1.7)
 

@@ -2,7 +2,7 @@
 
 ## Onde paramos
 - Etapa 0 concluída: fluxo de agentes adaptado do `godot-template` (fluxos `/inicio` `/planejar` `/revisar` `/fim`, `scripts/check.ps1`, hook de toolchain, memória em `docs/`) e regra de commits pelo agente (decisão 0008).
-- Etapa 1 em andamento: 1.1 concluída; 1.2 a 1.5 implementadas e aguardando validação jogando; 1.6 concluída (metas aprovadas em `docs/sistemas/balanceamento.md`). Onda 1 de subagentes (1.7, 1.8, 1.9a, 1.9b, 1.9c) planejada.
+- Etapa 1 em andamento: 1.1 e 1.6 concluídas; 1.2 a 1.5 implementadas e aguardando validação jogando. Onda 1 (1.7, 1.8, 1.9a, 1.9b, 1.9c) implementada por subagentes, integrada na `main` com check completo passando; aguarda validação jogando.
 - Jogo jogável: lobby, salas geradas por bioma, combate melee/ranged, props e tochas com iluminação, reward pouches, inventário, loja, forja e baú.
 
 ## Roadmap até a demo
@@ -31,15 +31,15 @@ Subtarefas, em ordem de execução. Metas numéricas em [balanceamento.md](siste
 - [ ] **1.4 Congelar caverna e mansão**: o sorteio retorna apenas Dungeon e `biome.txt` continua forçando o bioma. *Implementada; falta validação jogando.*
 - [ ] **1.5 Tela de fim de run** com estatísticas e botão para voltar ao lobby. *Implementada; falta validação jogando ([fim-de-run.md](sistemas/fim-de-run.md)).*
 - [x] **1.6 Metas de balanceamento**: aprovadas em [balanceamento.md](sistemas/balanceamento.md).
-- [ ] **1.7 Inimigos da Dungeon** (onda 1). Victim, Guard e Executioner substituem `dungeon_melee` e `dungeon_ranged`, com padrões de ataque próprios (nenhuma arma do player), crítico zero e atributos, bolsas e pesos da tabela de metas. Inclui inimigos por sala (`round(área × 0,02)`, mín. 2), teto de 1 Executioner a cada 4 inimigos e o escalonamento temporário de dificuldade. Sprites placeholders gerados pelo agente. Entregável: testes de faixa headless dos atributos, da composição da sala e do escalonamento.
+- [ ] **1.7 Inimigos da Dungeon** (onda 1). Victim, Guard e Executioner substituem `dungeon_melee` e `dungeon_ranged`, com padrões de ataque próprios (nenhuma arma do player), crítico zero e atributos, bolsas e pesos da tabela de metas. Inclui inimigos por sala (`round(área × 0,02)`, mín. 2), teto de 1 Executioner a cada 4 inimigos e o escalonamento temporário de dificuldade. Sprites placeholders gerados pelo agente. Entregável: testes de faixa headless dos atributos, da composição da sala e do escalonamento. *Implementada; falta validação jogando ([inimigos.md](sistemas/inimigos.md)).*
   - [ ] **Victim**: esqueleto sem roupas que arremessa ossos de longa distância; pouca vida, rápido.
   - [ ] **Guard**: esqueleto com peitoral de ferro e lança; estocada como a da machadinha, precedida por carga curta; rápido, dano e vida moderados.
   - [ ] **Executioner**: esqueleto executor com machadão; ataque giratório como a espada giratória do jogador, parado num frame de carga antes do giro; vida e dano altos; aparece menos.
-- [ ] **1.8 Visual definitivo do cavaleiro** (onda 1): sprite e animações gerados pelo agente, sem mudanças em atributos ou habilidades.
+- [ ] **1.8 Visual definitivo do cavaleiro** (onda 1): sprite e animações gerados pelo agente (`tools/sprites/knight.py`), sem mudanças em atributos ou habilidades. *Implementada; falta validação jogando.*
 - [ ] **1.9 Balanceamento aplicado**:
-  - [ ] **1.9a Armas** (onda 1): `poder` aplicado ao dano (`× (1 + poder/100)`) e DPS por tier (Cajado, Broquel, Espada Rúnica). Entregável: testes de DPS por tier e de `poder`; nota `sistemas/armas.md` com os pontos de ajuste manual.
-  - [ ] **1.9b Economia e modo debug** (onda 1): `debug.txt` (Kit do Testador nos 4 slots e nos pools só quando ligado), cavaleiro sem bônus de personagem, tabela de valores por raridade, venda a 30%, loja com poção garantida e peso por raridade, baú por peso de raridade, custo da forja = 80% do valor do produto. Entregável: testes headless dessas regras.
-  - [ ] **1.9c Salas** (onda 1): simulação de seeds medindo salas especiais visíveis até a 10ª sala visitada e comentário em `kRoomTypeWeights` sobre reintroduzir a chance de boss crescente.
+  - [ ] **1.9a Armas** (onda 1): `poder` aplicado ao dano (`× (1 + poder/100)`) e DPS por tier (Cajado, Broquel, Espada Rúnica). Entregável: testes de DPS por tier e de `poder`; nota `sistemas/armas.md` com os pontos de ajuste manual. *Implementada; falta validação jogando ([armas.md](sistemas/armas.md)).*
+  - [ ] **1.9b Economia e modo debug** (onda 1): `debug.txt` (Kit do Testador nos 4 slots e nos pools só quando ligado), cavaleiro sem bônus de personagem, tabela de valores por raridade, venda a 30%, loja com poção garantida e peso por raridade, baú por peso de raridade, custo da forja = 80% do valor do produto. Entregável: testes headless dessas regras. *Implementada; falta validação jogando ([economia.md](sistemas/economia.md)).*
+  - [ ] **1.9c Salas** (onda 1): simulação de seeds medindo salas especiais visíveis até a 10ª sala visitada e comentário em `kRoomTypeWeights` sobre reintroduzir a chance de boss crescente. *Concluída: loja visível em 70,0% das runs (no limite da meta; ver balanceamento.md).*
   - [ ] **1.9d Playtest** pelo desenvolvedor, com o roteiro de `balanceamento.md`. Depende de 1.7 a 1.9c.
 - [ ] **1.10 UI**: revisão visual do HUD e das telas de loja, forja, baú e inventário, sem regras novas e validada com o desenvolvedor. Depois da onda 1.
 - [ ] **1.11 Equipamentos de atributos de ataque**: equipamentos que concedem Força, Foco, Conhecimento (e talvez Constituição e Misticismo) e as receitas de forja correspondentes. Escopo a definir pelo desenvolvedor em sessão futura.
@@ -47,7 +47,7 @@ Subtarefas, em ordem de execução. Metas numéricas em [balanceamento.md](siste
 
 ### Execução da onda 1
 
-Cada subtarefa da onda 1 é implementada por um subagente em branch própria (`feat/1.7-inimigos`, `feat/1.8-cavaleiro`, `feat/1.9a-armas`, `feat/1.9b-economia`, `test/1.9c-salas`), em paralelo: nenhuma depende de outra, e os conflitos esperados (Makefile, `.gitignore`, `check.ps1`, `arquitetura.md`, `CreateKnightCharacter`) são resolvidos no merge. O agente principal revisa os diffs, faz o merge na `main` (ordem: 1.9c, 1.9a, 1.8, 1.9b, 1.7), roda o check completo, faz push e apaga as branches. Subagentes não editam `status.md` nem `balanceamento.md`.
+Concluída: cada subtarefa foi implementada por um subagente em branch própria, integrada na `main` (merges `466fa06`, `45e5b42`, `25cd5f4`, `a5683f3`, `8c77e58`) e as branches foram apagadas.
 
 ## Pós-demo
 - Habilidades e atributos próprios do cavaleiro.
@@ -58,8 +58,8 @@ Cada subtarefa da onda 1 é implementada por um subagente em branch própria (`f
 - Retomar os biomas caverna e mansão.
 
 ## Próximo passo
-- Agente: executar a onda 1 (subagentes), revisar, fazer o merge e o push.
-- Desenvolvedor: validar 1.2 a 1.5 jogando; depois da onda 1, playtest (1.9d) e revisão de UI (1.10).
+- Desenvolvedor: validar jogando 1.2 a 1.5 e a onda 1 (roteiros em `inimigos.md`, `armas.md`, `economia.md` e `balanceamento.md`), depois o playtest 1.9d; decidir se os pesos de salas sobem para 70/10/10/10 (folga na meta de loja visível).
+- Depois da validação: 1.10 (UI) com o desenvolvedor.
 
 ## Bloqueios
 - Nenhum.
