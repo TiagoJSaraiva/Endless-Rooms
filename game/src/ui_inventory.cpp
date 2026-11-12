@@ -44,6 +44,7 @@ constexpr int kDefaultShopStock = 1; // Non-consumables default to a single copy
 constexpr int kConsumableShopMinStock = 2;
 constexpr int kConsumableShopMaxStock = 7;
 constexpr int kShopSlotCount = 4;
+constexpr int kDebugKitEquipmentSlots = 4; // Os 4 slots de equipamento recebem o Kit no modo debug
 constexpr float kInventorySpritePadding = 0.0f;
 
 struct InventorySpriteCacheEntry {
@@ -842,7 +843,7 @@ void RollShopInventoryInternal(InventoryUIState& state, ShopInstance* shop = nul
     std::vector<int> availableIndices;
     availableIndices.reserve(state.items.size());
     for (int i = 0; i < static_cast<int>(state.items.size()); ++i) {
-        if (state.items[i].id > 0) {
+        if (state.items[i].id > 0 && (!state.items[i].debugOnly || state.debugMode)) {
             availableIndices.push_back(i);
         }
     }
@@ -1778,6 +1779,9 @@ void EnsureCommonChestLoot(CommonChest& chest, const InventoryUIState& state) {
         if (def.category == ItemCategory::None) {
             continue;
         }
+        if (def.debugOnly && !state.debugMode) {
+            continue;
+        }
         lootPool.push_back(&def);
     }
 
@@ -1982,7 +1986,8 @@ void StoreShopContents(const InventoryUIState& state, ShopInstance& shop) {
     }
 }
 
-void InitializeInventoryUIDummyData(InventoryUIState& state) {
+void InitializeInventoryUIDummyData(InventoryUIState& state, bool debugMode) {
+    state.debugMode = debugMode;
     state.items.clear();
     state.itemNameToId.clear();
     state.weaponSlotIds.clear();
@@ -2127,6 +2132,7 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
     kitDoTestador,
     "assets/img/itens/Kit_do_Testador.png",
     Vector2{56.0f, 56.0f});
+    state.items.back().debugOnly = true;
 
     PlayerAttributes tunicaBonus{};
     tunicaBonus.primary.vigor = 2;
@@ -2258,10 +2264,11 @@ void InitializeInventoryUIDummyData(InventoryUIState& state) {
     EnsureWeaponCapacity(state, 2);
     SetWeaponSlot(state, 0, 1);
     SetWeaponSlot(state, 1, 3);
-    SetEquipmentSlot(state, 0, idkitDoTestador);
-    SetEquipmentSlot(state, 1, idkitDoTestador);
-    SetEquipmentSlot(state, 2, idkitDoTestador);
-    SetEquipmentSlot(state, 3, idkitDoTestador);
+    if (debugMode) {
+        for (int slot = 0; slot < kDebugKitEquipmentSlots; ++slot) {
+            SetEquipmentSlot(state, slot, idkitDoTestador);
+        }
+    }
 
     EnsureEquipmentCapacity(state, 5);
 

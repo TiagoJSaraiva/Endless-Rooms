@@ -29,6 +29,7 @@
 
 #include "room_manager.h"
 #include "biome_config.h"
+#include "debug_config.h"
 #include "room_renderer.h"
 #include "room_collision_rules.h"
 #include "room_types.h"
@@ -1082,6 +1083,7 @@ int main() {
 
     std::uint64_t worldSeed = GenerateWorldSeed();
     const std::optional<BiomeType> biomeOverride = BiomeConfig::LoadBiomeOverride();
+    const bool debugMode = DebugConfig::LoadDebugMode();
     RoomManager roomManager{worldSeed, biomeOverride};
     RoomRenderer roomRenderer;
     PropRenderer propRenderer;
@@ -1160,7 +1162,7 @@ int main() {
         enemyProjectileSystem.Clear();
 
         inventoryUI = InventoryUIState{};
-        InitializeInventoryUIDummyData(inventoryUI);
+        InitializeInventoryUIDummyData(inventoryUI, debugMode);
         inventoryUI.open = false;
         inventoryUI.mode = InventoryViewMode::Inventory;
         inventoryUI.selectedInventoryIndex = -1;
