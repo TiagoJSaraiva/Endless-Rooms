@@ -28,8 +28,43 @@ float RectSweep(Vector2 a,Vector2 b,Rectangle r) {
     if(!axis(a.x,b.x-a.x,r.x,r.x+r.width)||!axis(a.y,b.y-a.y,r.y,r.y+r.height)) return infinity;
     return lo;
 }
+
+// Tolerancia para considerar contiguos dois intervalos que se tocam na borda compartilhada.
+constexpr float kIntervalEpsilon=1e-4f;
+struct Interval { float lo; float hi; };
+// Liang-Barsky: intervalo de t em [0,1] em que o segmento esta dentro do retangulo.
+std::optional<Interval> InsideInterval(Vector2 a,Vector2 b,Rectangle r) {
+    float lo=0,hi=1;
+    auto axis=[&](float start,float delta,float min,float max) {
+        if(std::abs(delta)<1e-8f) return start>=min&&start<=max;
+        float t1=(min-start)/delta,t2=(max-start)/delta;
+        if(t1>t2) std::swap(t1,t2);
+        lo=std::max(lo,t1);hi=std::min(hi,t2);
+        return lo<=hi;
+    };
+    if(!axis(a.x,b.x-a.x,r.x,r.x+r.width)||!axis(a.y,b.y-a.y,r.y,r.y+r.height)) return std::nullopt;
+    return Interval{lo,hi};
+}
 }
 namespace CombatGeometry {
+std::optional<float> ExitFraction(Vector2 from,Vector2 to,const std::vector<Rectangle>& areas) {
+    std::vector<Interval> intervals;
+    for(const Rectangle& area:areas) {
+        if(auto interval=InsideInterval(from,to,area)) intervals.push_back(*interval);
+    }
+    // Encadeia os intervalos contiguos que comecam em t=0; o fim da cadeia e a saida.
+    float reach=-1.0f;
+    bool extended=true;
+    while(extended) {
+        extended=false;
+        for(const Interval& interval:intervals) {
+            bool touchesChain=reach<0.0f ? interval.lo<=kIntervalEpsilon : interval.lo<=reach+kIntervalEpsilon;
+            if(touchesChain&&interval.hi>reach) { reach=interval.hi; extended=true; }
+        }
+    }
+    if(reach<0.0f||reach>=1.0f-kIntervalEpsilon) return std::nullopt;
+    return reach;
+}
 float Sweep(Vector2 a,Vector2 b,float radius,const ProjectileTarget& t) {
     radius=std::max(0.0f,radius);
     if(!t.rectangle) return CircleSweep(a,b,t.center,radius+t.radius);

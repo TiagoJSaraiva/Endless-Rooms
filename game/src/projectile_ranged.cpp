@@ -144,6 +144,15 @@ public:
         }
     }
 
+    void ClipToPassable(const std::vector<Rectangle>& areas) override {
+        if (terminalFrame_) return;
+        auto exit = CombatGeometry::ExitFraction(previousPosition_, position_, areas);
+        if (!exit) return;
+        // Para na parede, mas mantem o frame para que acertos antes dela ainda contem.
+        position_ = Vector2Add(previousPosition_, Vector2Scale(Vector2Subtract(position_, previousPosition_), *exit));
+        terminalFrame_ = true;
+    }
+
     bool ConsumesOnImpact() const override { return true; }
     float ImpactFraction(const ProjectileTarget& target) const override {
         return CombatGeometry::Sweep(previousPosition_, position_, params_.radius, target);
@@ -318,6 +327,9 @@ public:
         outEvents.push_back(event);
     }
 
+    // Guarda as areas; o feixe e recalculado a cada frame porque segue o dono.
+    void ClipToPassable(const std::vector<Rectangle>& areas) override { passableAreas_ = areas; }
+
     bool IsExpired() const override {
         return expired_;
     }
@@ -328,10 +340,13 @@ private:
         return (beamDuration_ <= 0.0f) || !beamExpired_;
     }
 
-    // Calcula início/fim do feixe usando offsets configurados.
+    // Calcula início/fim do feixe usando offsets configurados, cortado na parede.
     void ComputeBeamSegment(Vector2& outStart, Vector2& outEnd) const {
         outStart = Vector2Add(origin_, startOffset_);
         outEnd = Vector2Add(outStart, Vector2Scale(direction_, params_.length));
+        if (auto exit = CombatGeometry::ExitFraction(outStart, outEnd, passableAreas_)) {
+            outEnd = Vector2Add(outStart, Vector2Scale(Vector2Subtract(outEnd, outStart), *exit));
+        }
     }
 
     ProjectileCommonParams common_{};
@@ -347,6 +362,7 @@ private:
     bool beamExpired_{false};
     bool expired_{false};
     PerTargetHitTracker perTargetHits_{};
+    std::vector<Rectangle> passableAreas_{};
 };
 
 

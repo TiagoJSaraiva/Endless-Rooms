@@ -1,5 +1,7 @@
 #include "room_collision_rules.h"
 
+#include "room.h"
+
 #include <algorithm>
 
 namespace RoomCollisionRules {
@@ -36,6 +38,32 @@ Rectangle RoomBoundsForCollision(const TileRect& tileBounds, BiomeType biome) {
         static_cast<float>(tileBounds.width) * tileSize,
         std::max(0.0f, height - bottomInset)
     };
+}
+
+namespace {
+Rectangle TilesToPixels(const TileRect& tiles) {
+    const float tileSize = static_cast<float>(TILE_SIZE);
+    return Rectangle{
+        static_cast<float>(tiles.x) * tileSize,
+        static_cast<float>(tiles.y) * tileSize,
+        static_cast<float>(tiles.width) * tileSize,
+        static_cast<float>(tiles.height) * tileSize
+    };
+}
+} // namespace
+
+std::vector<Rectangle> ProjectilePassableAreas(const std::vector<const Room*>& rooms) {
+    std::vector<Rectangle> areas;
+    for (const Room* room : rooms) {
+        if (room == nullptr) continue;
+        const RoomLayout& layout = room->Layout();
+        areas.push_back(TilesToPixels(layout.tileBounds));
+        for (const Doorway& door : layout.doors) {
+            if (door.sealed || !door.doorState || !door.doorState->open) continue;
+            areas.push_back(TilesToPixels(door.corridorTiles));
+        }
+    }
+    return areas;
 }
 
 } // namespace RoomCollisionRules
