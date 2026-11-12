@@ -8,6 +8,7 @@ Uma nota por sistema, criada quando o sistema passa a existir ou ganha regras qu
 | [reward-pouches.md](reward-pouches.md) | Bolsas de recompensa: pools, drops e coleta |
 | [colisao-de-salas.md](colisao-de-salas.md) | Limite inferior das salas e navegação junto à borda |
 | [diagnostico-de-crashes.md](diagnostico-de-crashes.md) | Validade de donos de projéteis e cache de wall props |
+| [balanceamento.md](balanceamento.md) | Metas de balanceamento da demo (proposta): ritmo, economia e combate |
 
 Modelo:
 
