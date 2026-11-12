@@ -5,6 +5,7 @@
 
 #include "player.h"
 #include "projectile.h"
+#include "weapon_rules.h"
 
 // Define dano base da arma e quanto escala com o atributo principal.
 struct WeaponDamageParams {
@@ -86,7 +87,9 @@ struct WeaponState {
 
         if (blueprint->damage.baseDamage > 0.0f || blueprint->damage.attributeScaling != 0.0f) {
             int attributeValue = player.GetAttackAttributeValue(blueprint->attributeKey);
-            derived.damagePerShot = blueprint->damage.baseDamage + blueprint->damage.attributeScaling * static_cast<float>(attributeValue);
+            const float preBonusDamage = blueprint->damage.baseDamage + blueprint->damage.attributeScaling * static_cast<float>(attributeValue);
+            // Único ponto onde o Poder entra no dano; a UI e o disparo só leem este valor.
+            derived.damagePerShot = preBonusDamage * WeaponRules::PowerDamageMultiplier(player.totalAttributes.primary.poder);
         }
 
         if (blueprint->cadence.baseAttacksPerSecond > 0.0f) {
