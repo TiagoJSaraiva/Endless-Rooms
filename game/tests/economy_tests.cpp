@@ -2,6 +2,7 @@
 // Não abrem janela: só montam o estado do inventário e do jogador.
 #include "inventory_rules.h"
 #include "player.h"
+#include "chest.h"
 #include "ui_inventory.h"
 
 #include <cassert>
@@ -58,12 +59,86 @@ void TestStartingStateWithDebug() {
     assert(knight.totalAttributes.primary.defesa == 20);
 }
 
+constexpr int kPotionItemId = 150;
+constexpr int kCommonEquipmentValue = 50;
+constexpr int kCommonEquipmentBuyPrice = 65;
+constexpr int kSampleSeeds = 3000;
+
+void TestCatalogValues() {
+    InventoryUIState state{};
+    InitializeInventoryUIDummyData(state, false);
+    const ItemDefinition* potion = GetItemDefinition(state, kPotionItemId);
+    const ItemDefinition* tunic = GetItemDefinition(state, 110);   // Túnica (equipamento comum)
+    const ItemDefinition* leather = GetItemDefinition(state, 101); // Tira de couro (material)
+    assert(potion != nullptr && tunic != nullptr && leather != nullptr);
+    assert(potion->value == 35);
+    assert(tunic->value == kCommonEquipmentValue);
+    assert(leather->value == 20);
+    assert(InventoryRules::BuyPrice(tunic->value) == kCommonEquipmentBuyPrice);
+    assert(state.sellPriceMultiplier == InventoryRules::kBaseSellMultiplier);
+}
+
+// A loja real, sorteada pelo caminho de produção (semente da loja), sempre tem poção e nunca o Kit sem debug.
+void TestShopThroughInventoryState() {
+    for (bool debug : {false, true}) {
+        InventoryUIState state{};
+        InitializeInventoryUIDummyData(state, debug);
+        bool kitSeen = false;
+        for (int seed = 1; seed <= kSampleSeeds; ++seed) {
+            ShopInstance shop{};
+            shop.baseSeed = static_cast<std::uint64_t>(seed);
+            RollShopInventory(state, &shop);
+
+            assert(state.shopItemIds.size() >= static_cast<size_t>(InventoryRules::kShopSlotCount));
+            assert(state.shopItemIds[0] == kPotionItemId);
+            assert(state.shopStock[0] >= 2 && state.shopStock[0] <= 4);
+            assert(state.shopPrices[0] == InventoryRules::BuyPrice(35));
+            const ItemDefinition* premium = GetItemDefinition(state, state.shopItemIds[1]);
+            assert(premium != nullptr && premium->rarity >= 2);
+            assert(shop.items.size() == static_cast<size_t>(InventoryRules::kShopSlotCount));
+
+            for (int slot = 0; slot < InventoryRules::kShopSlotCount; ++slot) {
+                kitSeen = kitSeen || state.shopItemIds[slot] == kKitItemId;
+                for (int other = slot + 1; other < InventoryRules::kShopSlotCount; ++other) {
+                    assert(state.shopItemIds[slot] != state.shopItemIds[other]);
+                }
+            }
+        }
+        assert(kitSeen == debug);
+    }
+}
+
+// O baú real (EnsureCommonChestLoot) preenche 2 a 3 slots e só inclui o Kit no modo debug.
+void TestChestThroughInventoryState() {
+    for (bool debug : {false, true}) {
+        InventoryUIState state{};
+        InitializeInventoryUIDummyData(state, debug);
+        bool kitSeen = false;
+        for (int seed = 1; seed <= kSampleSeeds; ++seed) {
+            CommonChest chest(0.0f, 0.0f, 100.0f, Rectangle{0.0f, 0.0f, 10.0f, 10.0f}, 8, static_cast<std::uint64_t>(seed));
+            EnsureCommonChestLoot(chest, state);
+            int filled = 0;
+            for (const Chest::Slot& slot : chest.GetSlots()) {
+                if (slot.itemId == 0) { continue; }
+                ++filled;
+                kitSeen = kitSeen || slot.itemId == kKitItemId;
+                assert(slot.quantity >= 1);
+            }
+            assert(filled >= 2 && filled <= 3);
+        }
+        assert(kitSeen == debug);
+    }
+}
+
 } // namespace
 
 int main() {
     TestKnightStartsWithoutCharacterBonuses();
     TestStartingStateWithoutDebug();
     TestStartingStateWithDebug();
+    TestCatalogValues();
+    TestShopThroughInventoryState();
+    TestChestThroughInventoryState();
     std::cout << "Economy tests passed\n";
     return 0;
 }

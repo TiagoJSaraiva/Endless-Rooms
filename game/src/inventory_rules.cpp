@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <numeric>
 
 namespace InventoryRules {
 
@@ -65,6 +66,151 @@ int SaleValue(int itemValue, int quantity, float sellMultiplier) {
     constexpr double kRoundingEpsilon = 1e-6;
     const double total = static_cast<double>(itemValue) * quantity * std::max(0.0f, sellMultiplier);
     return static_cast<int>(std::floor(total + 0.5 + kRoundingEpsilon));
+}
+
+bool IsLootEligible(const ItemDefinition& item, bool debugMode) {
+    if (item.id <= 0 || item.category == ItemCategory::None) {
+        return false;
+    }
+    return !item.debugOnly || debugMode;
+}
+
+const ItemDefinition* PickByRarityWeight(const std::vector<const ItemDefinition*>& candidates,
+                                         std::mt19937_64& rng) {
+    if (candidates.empty()) {
+        return nullptr;
+    }
+
+    // Só entram no sorteio as raridades da tabela que têm ao menos um candidato.
+    std::array<int, kRarityWeights.size()> weights{};
+    for (const ItemDefinition* item : candidates) {
+        const int rarity = item->rarity;
+        if (rarity >= 1 && rarity <= static_cast<int>(kRarityWeights.size())) {
+            weights[static_cast<size_t>(rarity - 1)] = kRarityWeights[static_cast<size_t>(rarity - 1)];
+        }
+    }
+    const int totalWeight = std::accumulate(weights.begin(), weights.end(), 0);
+    if (totalWeight <= 0) {
+        // Nenhum candidato com raridade da tabela: sorteio uniforme evita loja/baú vazios.
+        std::uniform_int_distribution<size_t> any(0, candidates.size() - 1);
+        return candidates[any(rng)];
+    }
+
+    int roll = std::uniform_int_distribution<int>(0, totalWeight - 1)(rng);
+    int chosenRarity = 1;
+    for (size_t i = 0; i < weights.size(); ++i) {
+        if (roll < weights[i]) {
+            chosenRarity = static_cast<int>(i) + 1;
+            break;
+        }
+        roll -= weights[i];
+    }
+
+    std::vector<const ItemDefinition*> sameRarity;
+    for (const ItemDefinition* item : candidates) {
+        if (item->rarity == chosenRarity) {
+            sameRarity.push_back(item);
+        }
+    }
+    std::uniform_int_distribution<size_t> pick(0, sameRarity.size() - 1);
+    return sameRarity[pick(rng)];
+}
+
+namespace {
+
+void RemoveCandidate(std::vector<const ItemDefinition*>& candidates, const ItemDefinition* item) {
+    candidates.erase(std::remove(candidates.begin(), candidates.end(), item), candidates.end());
+}
+
+std::vector<const ItemDefinition*> EligibleItems(const std::vector<ItemDefinition>& catalog, bool debugMode) {
+    std::vector<const ItemDefinition*> eligible;
+    eligible.reserve(catalog.size());
+    for (const ItemDefinition& item : catalog) {
+        if (IsLootEligible(item, debugMode)) {
+            eligible.push_back(&item);
+        }
+    }
+    return eligible;
+}
+
+} // namespace
+
+std::vector<ShopSlotRoll> RollShopSlots(const std::vector<ItemDefinition>& catalog,
+                                        bool debugMode,
+                                        std::mt19937_64& rng) {
+    std::vector<const ItemDefinition*> pool = EligibleItems(catalog, debugMode);
+    std::vector<ShopSlotRoll> slots;
+    slots.reserve(kShopSlotCount);
+
+    auto addSlot = [&](const ItemDefinition* item) {
+        ShopSlotRoll slot{};
+        slot.itemId = item->id;
+        slot.stock = 1;
+        if (item->category == ItemCategory::Consumable) {
+            slot.stock = std::uniform_int_distribution<int>(kShopConsumableMinStock, kShopConsumableMaxStock)(rng);
+        }
+        slots.push_back(slot);
+        RemoveCandidate(pool, item);
+    };
+
+    // 1) Slot garantido de consumível (a poção de cura), uniforme entre os consumíveis.
+    std::vector<const ItemDefinition*> consumables;
+    for (const ItemDefinition* item : pool) {
+        if (item->category == ItemCategory::Consumable) {
+            consumables.push_back(item);
+        }
+    }
+    if (!consumables.empty()) {
+        std::uniform_int_distribution<size_t> pick(0, consumables.size() - 1);
+        addSlot(consumables[pick(rng)]);
+    }
+
+    // 2) Slot premium: raridade >= 2 pelo peso de raridade.
+    std::vector<const ItemDefinition*> premium;
+    for (const ItemDefinition* item : pool) {
+        if (item->rarity >= kShopMinHighRarity) {
+            premium.push_back(item);
+        }
+    }
+    if (const ItemDefinition* item = PickByRarityWeight(premium, rng)) {
+        addSlot(item);
+    }
+
+    // 3) Demais slots: peso de raridade entre os itens restantes.
+    while (static_cast<int>(slots.size()) < kShopSlotCount) {
+        const ItemDefinition* item = PickByRarityWeight(pool, rng);
+        if (item == nullptr) {
+            break;
+        }
+        addSlot(item);
+    }
+    return slots;
+}
+
+std::vector<ChestLootEntry> RollChestLoot(const std::vector<ItemDefinition>& catalog,
+                                          bool debugMode,
+                                          std::mt19937_64& rng) {
+    std::vector<const ItemDefinition*> pool = EligibleItems(catalog, debugMode);
+    const int slotCount = std::uniform_int_distribution<int>(kChestMinSlots, kChestMaxSlots)(rng);
+
+    std::vector<ChestLootEntry> loot;
+    for (int i = 0; i < slotCount; ++i) {
+        const ItemDefinition* item = PickByRarityWeight(pool, rng);
+        if (item == nullptr) {
+            break;
+        }
+
+        int quantity = 1;
+        if (item->category == ItemCategory::Consumable) {
+            quantity = std::uniform_int_distribution<int>(kChestConsumableMinQuantity, kChestConsumableMaxQuantity)(rng);
+        } else if (item->category == ItemCategory::Material) {
+            quantity = std::uniform_int_distribution<int>(kChestMaterialMinQuantity, kChestMaterialMaxQuantity)(rng);
+        }
+        quantity = std::min(quantity, MaxStackForCategory(item->category));
+        loot.push_back(ChestLootEntry{item->id, quantity});
+        RemoveCandidate(pool, item);
+    }
+    return loot;
 }
 
 ItemCategory ItemCategoryFromId(const InventoryUIState& state, int id) {

@@ -40,10 +40,7 @@ namespace {
 // Valores padrão para feedback visual e parametrizações das listas.
 constexpr float kFeedbackDuration = 2.5f;
 constexpr float kBodyTextSpacing = 2.0f;
-constexpr int kDefaultShopStock = 1; // Non-consumables default to a single copy
-constexpr int kConsumableShopMinStock = 2;
-constexpr int kConsumableShopMaxStock = 7;
-constexpr int kShopSlotCount = 4;
+constexpr int kShopSlotCount = InventoryRules::kShopSlotCount;
 constexpr int kDebugKitEquipmentSlots = 4; // Os 4 slots de equipamento recebem o Kit no modo debug
 constexpr float kInventorySpritePadding = 0.0f;
 
@@ -840,49 +837,21 @@ void RollShopInventoryInternal(InventoryUIState& state, ShopInstance* shop = nul
     state.shopStock.assign(kShopSlotCount, 0);
     ResetShopTradeState(state);
 
-    std::vector<int> availableIndices;
-    availableIndices.reserve(state.items.size());
-    for (int i = 0; i < static_cast<int>(state.items.size()); ++i) {
-        if (state.items[i].id > 0 && (!state.items[i].debugOnly || state.debugMode)) {
-            availableIndices.push_back(i);
-        }
-    }
-
-    std::mt19937_64 shopRng;
-    bool useShopRng = (shop != nullptr);
-    if (useShopRng) {
-        shopRng.seed(shop->CurrentSeed());
-    }
+    // A vitrine de uma loja é determinística pela semente da loja (re-roll muda a semente).
+    // Sem loja ligada (inicialização), usa uma semente aleatória.
+    std::mt19937_64 shopRng(shop != nullptr ? shop->CurrentSeed() : std::random_device{}());
+    const std::vector<InventoryRules::ShopSlotRoll> rolled =
+        InventoryRules::RollShopSlots(state.items, state.debugMode, shopRng);
 
     for (int slot = 0; slot < kShopSlotCount; ++slot) {
-        if (availableIndices.empty()) {
+        if (slot >= static_cast<int>(rolled.size())) {
             SetShopSlot(state, slot, 0, 0, 0);
             continue;
         }
-
-        int pickIndex = 0;
-        if (useShopRng) {
-            std::uniform_int_distribution<int> dist(0, static_cast<int>(availableIndices.size()) - 1);
-            pickIndex = dist(shopRng);
-        } else {
-            pickIndex = GetRandomValue(0, static_cast<int>(availableIndices.size()) - 1);
-        }
-
-        int itemIndex = availableIndices[pickIndex];
-        const ItemDefinition& def = state.items[itemIndex];
-        int finalPrice = InventoryRules::BuyPrice(def.value);
-        int stock = kDefaultShopStock;
-        if (def.category == ItemCategory::Consumable) {
-            if (useShopRng) {
-                std::uniform_int_distribution<int> stockDist(kConsumableShopMinStock, kConsumableShopMaxStock);
-                stock = stockDist(shopRng);
-            } else {
-                stock = GetRandomValue(kConsumableShopMinStock, kConsumableShopMaxStock);
-            }
-        }
-
-        SetShopSlot(state, slot, def.id, finalPrice, stock);
-        availableIndices.erase(availableIndices.begin() + pickIndex);
+        const InventoryRules::ShopSlotRoll& entry = rolled[static_cast<size_t>(slot)];
+        const ItemDefinition* def = FindItemDefinition(state, entry.itemId);
+        const int price = (def != nullptr) ? InventoryRules::BuyPrice(def->value) : 0;
+        SetShopSlot(state, slot, entry.itemId, price, entry.stock);
     }
 
     if (shop != nullptr) {
@@ -1767,61 +1736,18 @@ void EnsureCommonChestLoot(CommonChest& chest, const InventoryUIState& state) {
         slot.quantity = 0;
     }
 
-    std::vector<const ItemDefinition*> lootPool;
-    lootPool.reserve(state.items.size());
-    for (const ItemDefinition& def : state.items) {
-        if (def.id <= 0) {
-            continue;
-        }
-        if (def.category == ItemCategory::None) {
-            continue;
-        }
-        if (def.debugOnly && !state.debugMode) {
-            continue;
-        }
-        lootPool.push_back(&def);
-    }
-
-    if (lootPool.empty()) {
-        chest.MarkGenerated();
-        return;
-    }
-
+    // Conteúdo sorteado por regra pura (peso de raridade); aqui só se escolhe em quais slots cai.
     std::mt19937_64 rng(chest.LootSeed());
+    const std::vector<InventoryRules::ChestLootEntry> loot =
+        InventoryRules::RollChestLoot(state.items, state.debugMode, rng);
 
     std::vector<int> slotIndices(static_cast<size_t>(chest.Capacity()));
     std::iota(slotIndices.begin(), slotIndices.end(), 0);
     std::shuffle(slotIndices.begin(), slotIndices.end(), rng);
 
-    int maxSlotsToFill = std::min(static_cast<int>(slotIndices.size()), 3);
-    maxSlotsToFill = std::max(1, maxSlotsToFill);
-    std::uniform_int_distribution<int> countDist(1, maxSlotsToFill);
-    int slotsToFill = std::min(countDist(rng), static_cast<int>(slotIndices.size()));
-
-    if (slotsToFill <= 0) {
-        chest.MarkGenerated();
-        return;
-    }
-
-    std::uniform_int_distribution<int> poolDist(0, static_cast<int>(lootPool.size()) - 1);
-
-    for (int i = 0; i < slotsToFill; ++i) {
-        int slotIndex = slotIndices[static_cast<size_t>(i)];
-        const ItemDefinition* def = lootPool[static_cast<size_t>(poolDist(rng))];
-        if (def == nullptr) {
-            continue;
-        }
-
-        int quantity = 1;
-        if (def->category == ItemCategory::Consumable) {
-            std::uniform_int_distribution<int> qtyDist(1, std::min(3, InventoryRules::MaxStackForCategory(def->category)));
-            quantity = qtyDist(rng);
-        } else if (def->category == ItemCategory::Material) {
-            std::uniform_int_distribution<int> qtyDist(2, std::min(6, InventoryRules::MaxStackForCategory(def->category)));
-            quantity = qtyDist(rng);
-        }
-
-        chest.SetSlot(slotIndex, def->id, quantity);
+    const size_t slotsToFill = std::min(loot.size(), slotIndices.size());
+    for (size_t i = 0; i < slotsToFill; ++i) {
+        chest.SetSlot(slotIndices[i], loot[i].itemId, loot[i].quantity);
     }
 
     chest.MarkGenerated();
