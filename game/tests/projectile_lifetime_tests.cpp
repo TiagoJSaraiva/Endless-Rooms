@@ -1,4 +1,5 @@
 #include "enemy_common.h"
+#include "enemy_rules.h"
 #include "projectile.h"
 #include "room.h"
 
@@ -189,7 +190,63 @@ void CheckEnemyDeathAndRespawn() {
 }
 }
 
+// Inimigos da Dungeon atacando de verdade: tempos de carga, dano por acerto e validade do dono.
+struct DungeonRun {
+    float firstHitSeconds{-1.0f};
+    int hits{0};
+    float damage{0.0f};
+};
+
+DungeonRun RunDungeonEnemy(EnemyRules::EnemyKind kind, float distance, float seconds, float damageMultiplier = 1.0f) {
+    RoomLayout layout; layout.widthTiles = 20; layout.heightTiles = 20; layout.tileBounds = {0, 0, 20, 20};
+    Room room({}, {RoomType::Normal, BiomeType::Dungeon, 1}, layout);
+    const EnemyRules::EnemyDefinition& definition = EnemyRules::Definition(kind);
+    EnemyConfig config; config.maxHealth = definition.maxHealth; config.speed = definition.speed;
+    auto player = CreateKnightCharacter();
+    ProjectileSystem shots;
+    EnemyCommon enemy(config, definition, EnemySpriteInfo{}, damageMultiplier);
+    const Vector2 start{300, 300};
+    const Vector2 playerPosition{300 + distance, 300};
+    enemy.Initialize(room, start);
+    DungeonRun run;
+    constexpr float kStep = 0.01f;
+    constexpr float kFadeSeconds = 0.45f;
+    for (float time = 0.0f; time < seconds; time += kStep) {
+        enemy.Update({kStep, player, playerPosition, room, true, shots});
+        shots.Update(kStep);
+        for (const auto& event : shots.CollectDamageEvents(playerPosition, 18.0f, 99, 0.0f)) {
+            if (run.hits == 0) run.firstHitSeconds = time - kFadeSeconds;
+            ++run.hits;
+            run.damage += event.amount;
+            assert(!event.isCritical);
+        }
+    }
+    return run;
+}
+
+void CheckDungeonEnemyAttacks() {
+    // Guard: a estocada só acerta depois dos 0,35 s de carga, com 10 de dano.
+    DungeonRun guard = RunDungeonEnemy(EnemyRules::EnemyKind::Guard, 100.0f, 2.0f);
+    assert(guard.hits >= 1 && guard.damage / guard.hits == 10.0f);
+    assert(guard.firstHitSeconds >= 0.35f - 0.05f);
+    // Fora do alcance de início (120 px) o Guard anda, mas não acerta de longe.
+    assert(RunDungeonEnemy(EnemyRules::EnemyKind::Guard, 200.0f, 0.4f).hits == 0);
+
+    // Victim: osso acerta a 300 px com 5 de dano, sem carga.
+    DungeonRun victim = RunDungeonEnemy(EnemyRules::EnemyKind::Victim, 300.0f, 2.0f);
+    assert(victim.hits >= 1 && victim.damage / victim.hits == 5.0f);
+    // Dano escalonado entra no projétil.
+    DungeonRun scaled = RunDungeonEnemy(EnemyRules::EnemyKind::Victim, 300.0f, 2.0f, 2.0f);
+    assert(scaled.hits >= 1 && scaled.damage / scaled.hits == 10.0f);
+
+    // Executioner: 0,8 s de carga e, no máximo, 2 acertos de 16 por giro (um giro em 3 s).
+    DungeonRun executioner = RunDungeonEnemy(EnemyRules::EnemyKind::Executioner, 100.0f, 3.0f);
+    assert(executioner.hits >= 1 && executioner.hits <= 2 && executioner.damage / executioner.hits == 16.0f);
+    assert(executioner.firstHitSeconds >= 0.8f - 0.05f);
+}
+
 int main() {
     CheckFollowingFamilies(); CheckReusedAddress(); CheckIndependentAttacks(); CheckEnemyDeathAndRespawn();
+    CheckDungeonEnemyAttacks();
     std::cout << "Projectile lifetime tests passed\n";
 }

@@ -44,6 +44,7 @@
 #include "hud.h"
 #include "enemy_spawner.h"
 #include "enemy_common.h"
+#include "enemy_rules.h"
 #include "debug_console.h"
 #include "station_persistence.h"
 
@@ -1098,6 +1099,8 @@ int main() {
     using EnemyList = std::vector<std::unique_ptr<Enemy>>;
     std::unordered_map<RoomCoords, EnemyList, RoomCoordsHash> roomEnemies;
     std::unordered_set<RoomCoords, RoomCoordsHash> roomsWithSpawnedEnemies;
+    // Escalonamento temporário da demo: salas normais com todos os inimigos mortos (enemy_rules.h).
+    EnemyRules::ClearedRooms clearedNormalRooms;
     PlayerCharacter player = CreateKnightCharacter();
     CharacterSpriteResources playerSprites{};
     LoadCharacterSprites(player.appearance, playerSprites);
@@ -1126,7 +1129,7 @@ int main() {
             return;
         }
         EnemyList& storage = roomEnemies[coords];
-        enemySpawner.SpawnEnemiesForRoom(room, storage, enemyRng);
+        enemySpawner.SpawnEnemiesForRoom(room, storage, enemyRng, clearedNormalRooms.Count());
         roomsWithSpawnedEnemies.insert(coords);
     };
 
@@ -1153,6 +1156,7 @@ int main() {
         enemyRng.seed(static_cast<std::mt19937::result_type>(worldSeed));
         roomEnemies.clear();
         roomsWithSpawnedEnemies.clear();
+        clearedNormalRooms.Clear();
         roomRevealStates.clear();
         ambientLevel = LightingRules::AmbientLevel(BiomeType::Lobby);
         damageNumbers.clear();
@@ -1569,6 +1573,11 @@ int main() {
                                    return !enemy || !enemy->IsAlive();
                                }),
                 enemyList.end());
+
+            // Sala normal concluída = o jogador matou todos os inimigos dela.
+            if (playerInside && enemyList.empty() && enemyRoom->GetType() == RoomType::Normal) {
+                clearedNormalRooms.MarkCleared(enemyEntry.first);
+            }
 
             bool hasActiveEnemies = std::any_of(
                 enemyList.begin(),
