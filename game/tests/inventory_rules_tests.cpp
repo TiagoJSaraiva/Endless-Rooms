@@ -47,6 +47,23 @@ void TestValueBuyAndSellTable() {
     assert(InventoryRules::SaleValue(20, 3, InventoryRules::kBaseSellMultiplier) == 18);
 }
 
+void TestForgeCostAndChance() {
+    // Equipamento comum (valor 50): 40 moedas garantem 100%.
+    assert(InventoryRules::ForgeFullChanceCost(50) == 40);
+    assert(InventoryRules::ForgeFullChanceCost(150) == 120);
+    assert(InventoryRules::ForgeFullChanceCost(0) == 0);
+
+    assert(std::abs(InventoryRules::ForgeSuccessChance(40, 50) - 1.0f) < 1e-6f);
+    assert(std::abs(InventoryRules::ForgeSuccessChance(20, 50) - 0.5f) < 1e-6f);
+    assert(std::abs(InventoryRules::ForgeSuccessChance(10, 50) - 0.25f) < 1e-6f);
+    assert(InventoryRules::ForgeSuccessChance(0, 50) == 0.0f);
+    assert(InventoryRules::ForgeSuccessChance(-5, 50) == 0.0f);
+    // Acima do custo total, a chance fica em 100%.
+    assert(InventoryRules::ForgeSuccessChance(9999, 50) == 1.0f);
+    // Sem produto válido (sem receita), 0%.
+    assert(InventoryRules::ForgeSuccessChance(40, 0) == 0.0f);
+}
+
 // Catálogo sintético com todas as raridades, uma poção, materiais e um item só de debug.
 constexpr int kPotionId = 100;
 constexpr int kKitId = 900;
@@ -246,6 +263,7 @@ int main() {
     assert(InventoryRules::MaxStackForCategory(ItemCategory::Armor) == 1);
 
     TestValueBuyAndSellTable();
+    TestForgeCostAndChance();
     TestShopShape();
     TestShopSeedIsDeterministicAndVaries();
     TestShopPremiumSlotDistribution();

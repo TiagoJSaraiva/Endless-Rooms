@@ -29,6 +29,16 @@ int BuyPrice(int itemValue);
 // Quanto o jogador recebe ao vender `quantity` unidades: round(valor x quantidade x multiplicador).
 int SaleValue(int itemValue, int quantity, float sellMultiplier);
 
+// --- Forja ---
+
+// Fração do valor do item PRODUZIDO que garante 100% de chance de sucesso.
+constexpr double kForgeFullChanceValueFraction = 0.8;
+
+// Moedas necessárias para 100% de chance: 80% do valor do produto (equipamento comum, valor 50: 40).
+int ForgeFullChanceCost(int productValue);
+// Chance de sucesso (0 a 1) = investido / custo de 100%. Sem produto válido (valor <= 0), 0.
+float ForgeSuccessChance(int investedCoins, int productValue);
+
 // --- Loja e baú: sorteio por peso de raridade ---
 
 // Peso de sorteio de cada raridade na loja e no baú (índice 0 = raridade 1). Raridade sem item

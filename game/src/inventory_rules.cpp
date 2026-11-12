@@ -68,6 +68,22 @@ int SaleValue(int itemValue, int quantity, float sellMultiplier) {
     return static_cast<int>(std::floor(total + 0.5 + kRoundingEpsilon));
 }
 
+int ForgeFullChanceCost(int productValue) {
+    if (productValue <= 0) {
+        return 0;
+    }
+    return static_cast<int>(std::lround(productValue * kForgeFullChanceValueFraction));
+}
+
+float ForgeSuccessChance(int investedCoins, int productValue) {
+    if (productValue <= 0) {
+        return 0.0f;
+    }
+    const double fullCost = productValue * kForgeFullChanceValueFraction;
+    const double chance = std::max(0, investedCoins) / fullCost;
+    return static_cast<float>(std::clamp(chance, 0.0, 1.0));
+}
+
 bool IsLootEligible(const ItemDefinition& item, bool debugMode) {
     if (item.id <= 0 || item.category == ItemCategory::None) {
         return false;

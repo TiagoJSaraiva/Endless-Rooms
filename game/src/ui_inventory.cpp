@@ -707,6 +707,8 @@ Color ResolveBorderColor(const InventoryUIState& state, int itemId) {
     return RarityToColor(rarity);
 }
 
+bool DetermineForgeOutcome(const InventoryUIState& state, int& resultId, int& resultQuantity);
+
 void RefreshForgeChance(InventoryUIState& state) {
     if (state.forgeState == ForgeState::Broken) {
         state.forgeSuccessChance = 0.0f;
@@ -718,17 +720,14 @@ void RefreshForgeChance(InventoryUIState& state) {
         return;
     }
 
-    int valueA = GetItemValue(state, state.forgeInputIds[0]);
-    int valueB = GetItemValue(state, state.forgeInputIds[1]);
-    int totalValue = valueA + valueB;
-    if (totalValue <= 0) {
+    // A chance depende do valor do item que a receita produz (não dos ingredientes).
+    int resultId = 0;
+    int resultQuantity = 0;
+    if (!DetermineForgeOutcome(state, resultId, resultQuantity)) {
         state.forgeSuccessChance = 0.0f;
         return;
     }
-
-    float invested = static_cast<float>(std::max(0, state.forgeBaseCost));
-    float ratio = invested / static_cast<float>(totalValue);
-    state.forgeSuccessChance = std::clamp(ratio, 0.0f, 1.0f);
+    state.forgeSuccessChance = InventoryRules::ForgeSuccessChance(state.forgeBaseCost, GetItemValue(state, resultId));
 }
 
 std::string ItemNameFromId(const InventoryUIState& state, int id) {

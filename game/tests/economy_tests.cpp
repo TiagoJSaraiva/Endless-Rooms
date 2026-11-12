@@ -6,6 +6,7 @@
 #include "ui_inventory.h"
 
 #include <cassert>
+#include <cmath>
 #include <iostream>
 
 namespace {
@@ -130,6 +131,42 @@ void TestChestThroughInventoryState() {
     }
 }
 
+// A chance da forja usa o valor do item produzido pela receita (Farrapo + Farrapo = Túnica, valor 50).
+void TestForgeChanceUsesProductValue() {
+    InventoryUIState state{};
+    InitializeInventoryUIDummyData(state, false);
+
+    constexpr int kRagId = 100;
+    constexpr int kLeatherId = 101;
+    constexpr int kBronzeId = 102;
+    constexpr int kBronzeHelmetId = 112;
+    ForgeInstance forge{};
+    forge.contents.inputs[0] = ForgeInstance::Slot{kRagId, 1};
+    forge.contents.inputs[1] = ForgeInstance::Slot{kRagId, 1};
+
+    state.forgeBaseCost = 40;
+    LoadForgeContents(state, forge);
+    assert(std::abs(state.forgeSuccessChance - 1.0f) < 1e-6f);
+
+    state.forgeBaseCost = 20;
+    LoadForgeContents(state, forge);
+    assert(std::abs(state.forgeSuccessChance - 0.5f) < 1e-6f);
+
+    // Sem receita para a combinação (Tira de couro + Elmo de bronze): 0%.
+    forge.contents.inputs[0] = ForgeInstance::Slot{kLeatherId, 1};
+    forge.contents.inputs[1] = ForgeInstance::Slot{kBronzeHelmetId, 1};
+    state.forgeBaseCost = 9999;
+    LoadForgeContents(state, forge);
+    assert(state.forgeSuccessChance == 0.0f);
+
+    // Receita existente com investimento zero: 0%.
+    forge.contents.inputs[0] = ForgeInstance::Slot{kLeatherId, 1};
+    forge.contents.inputs[1] = ForgeInstance::Slot{kBronzeId, 1};
+    state.forgeBaseCost = 0;
+    LoadForgeContents(state, forge);
+    assert(state.forgeSuccessChance == 0.0f);
+}
+
 } // namespace
 
 int main() {
@@ -137,6 +174,7 @@ int main() {
     TestStartingStateWithoutDebug();
     TestStartingStateWithDebug();
     TestCatalogValues();
+    TestForgeChanceUsesProductValue();
     TestShopThroughInventoryState();
     TestChestThroughInventoryState();
     std::cout << "Economy tests passed\n";
