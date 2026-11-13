@@ -5,9 +5,10 @@ Como rodar (a partir da raiz do repositório; requer Python 3 com Pillow):
 Opcional: --preview <pasta> grava versões ampliadas ×4 (não versionadas).
 
 Gera, de forma determinística, em game/assets/img/character/cavaleiro/:
-  idle_sprite.png          38x68
-  walking_spritesheet.png  38x272 (4 quadros de 38x68 empilhados na vertical)
-O contrato de tamanho é o mesmo de CreateKnightCharacter (player.cpp).
+  idle_sprite.png          76x136
+  walking_spritesheet.png  76x544 (4 quadros de 76x136 empilhados na vertical)
+O desenho é feito na grade base de 38x68 e ampliado por SPRITE_SCALE (vizinho mais próximo,
+preserva o pixel art). O tamanho final é o de CreateKnightCharacter (player.cpp).
 O personagem é desenhado de frente, com os pés na base do quadro.
 """
 import os
@@ -15,6 +16,8 @@ import sys
 from PIL import Image
 
 FRAME_W, FRAME_H = 38, 68
+# Ampliação aplicada só na saída: o personagem fica maior na tela sem redesenhar a grade.
+SPRITE_SCALE = 2
 WALK_FRAMES = 4
 OUT_DIR = os.path.join("game", "assets", "img", "character", "cavaleiro")
 
@@ -148,14 +151,18 @@ def draw_frame(pose):
     return img
 
 
+def upscale(img):
+    return img.resize((img.width * SPRITE_SCALE, img.height * SPRITE_SCALE), Image.NEAREST)
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     idle = draw_frame(IDLE_POSE)
     sheet = Image.new("RGBA", (FRAME_W, FRAME_H * WALK_FRAMES), (0, 0, 0, 0))
     for i, pose in enumerate(WALK_POSES):
         sheet.paste(draw_frame(pose), (0, i * FRAME_H))
-    idle.save(os.path.join(OUT_DIR, "idle_sprite.png"))
-    sheet.save(os.path.join(OUT_DIR, "walking_spritesheet.png"))
+    upscale(idle).save(os.path.join(OUT_DIR, "idle_sprite.png"))
+    upscale(sheet).save(os.path.join(OUT_DIR, "walking_spritesheet.png"))
     if "--preview" in sys.argv:
         folder = sys.argv[sys.argv.index("--preview") + 1]
         os.makedirs(folder, exist_ok=True)

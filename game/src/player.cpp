@@ -84,8 +84,8 @@ PlayerCharacter CreateKnightCharacter() {
 
     knight.appearance.idleSpritePath = "assets/img/character/cavaleiro/idle_sprite.png";
     knight.appearance.walking.spriteSheetPath = "assets/img/character/cavaleiro/walking_spritesheet.png";
-    knight.appearance.walking.frameWidth = 38;
-    knight.appearance.walking.frameHeight = 68;
+    knight.appearance.walking.frameWidth = 76; // 38x68 desenhado e ampliado ×2 (tools/sprites/knight.py)
+    knight.appearance.walking.frameHeight = 136;
     knight.appearance.walking.frameCount = 4;
     knight.appearance.walking.secondsPerFrame = 0.14f; // Ajuste este valor para acelerar/ralentizar a animacao de caminhada.
     knight.appearance.walking.verticalLayout = true;
