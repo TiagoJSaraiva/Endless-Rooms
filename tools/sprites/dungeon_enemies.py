@@ -12,8 +12,9 @@ e as armas/projéteis desenhados pelos projéteis:
     dungeon_victim/bone.png, dungeon_guard/spear.png, dungeon_executioner/axe.png
 
 A saída é determinística (sem aleatoriedade): rodar de novo regenera os mesmos bytes.
-Os personagens são desenhados na grade base e ampliados por SPRITE_SCALE (vizinho mais próximo);
-as armas/projéteis não são ampliados. Os tamanhos de frame finais (base × SPRITE_SCALE) precisam
+Os personagens são desenhados na grade base e cada frame é ampliado por SPRITE_SCALE (vizinho mais
+próximo, tamanho arredondado; com fator não inteiro alguns pixels ficam mais largos que outros);
+as armas/projéteis não são ampliados. Os tamanhos de frame finais (round(base × SPRITE_SCALE)) precisam
 bater com `SpriteDefinition` em game/src/enemy_rules.cpp.
 As armas são desenhadas com o cabo no topo e a ponta embaixo, na proporção exata em que o
 jogo as estica (spear 11x31 -> 22x62, axe 17x65 -> 34x130, bone 8x14 -> 16x28).
@@ -28,7 +29,7 @@ from PIL import Image
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUT = os.path.join(ROOT, "game", "assets", "img", "enemies")
 # Ampliação dos personagens na saída: ficam maiores na tela sem redesenhar a grade.
-SPRITE_SCALE = 2
+SPRITE_SCALE = 1.4
 
 # ---- Paleta (dados) ----
 PALETTE = {
@@ -315,11 +316,14 @@ def make_axe():
 
 # ---------------------------------------------------------------- Saída
 
-def save(img, folder, name, scale=SPRITE_SCALE):
+def up(img):
+    size = (round(img.width * SPRITE_SCALE), round(img.height * SPRITE_SCALE))
+    return img.resize(size, Image.NEAREST)
+
+
+def save(img, folder, name):
     path = os.path.join(OUT, folder, name)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    if scale != 1:
-        img = img.resize((img.width * scale, img.height * scale), Image.NEAREST)
     img.save(path, optimize=False)
 
 
@@ -333,19 +337,19 @@ def sheet(frames):
 
 def main():
     idle = (0, 0, 0, 0)
-    save(victim_frame(idle), "dungeon_victim", "idle_sprite.png")
-    save(sheet([victim_frame(pose) for pose in WALK_CYCLE]), "dungeon_victim", "walking_spritesheet.png")
-    save(make_bone(), "dungeon_victim", "bone.png", scale=1)
+    save(up(victim_frame(idle)), "dungeon_victim", "idle_sprite.png")
+    save(sheet([up(victim_frame(pose)) for pose in WALK_CYCLE]), "dungeon_victim", "walking_spritesheet.png")
+    save(make_bone(), "dungeon_victim", "bone.png")
 
-    save(guard_frame(idle), "dungeon_guard", "idle_sprite.png")
-    save(sheet([guard_frame(pose) for pose in WALK_CYCLE]), "dungeon_guard", "walking_spritesheet.png")
-    save(guard_frame(idle, charge=True), "dungeon_guard", "charge_sprite.png")
-    save(make_spear(), "dungeon_guard", "spear.png", scale=1)
+    save(up(guard_frame(idle)), "dungeon_guard", "idle_sprite.png")
+    save(sheet([up(guard_frame(pose)) for pose in WALK_CYCLE]), "dungeon_guard", "walking_spritesheet.png")
+    save(up(guard_frame(idle, charge=True)), "dungeon_guard", "charge_sprite.png")
+    save(make_spear(), "dungeon_guard", "spear.png")
 
-    save(executioner_frame(idle), "dungeon_executioner", "idle_sprite.png")
-    save(sheet([executioner_frame(pose) for pose in WALK_CYCLE]), "dungeon_executioner", "walking_spritesheet.png")
-    save(executioner_frame(idle, charge=True), "dungeon_executioner", "charge_sprite.png")
-    save(make_axe(), "dungeon_executioner", "axe.png", scale=1)
+    save(up(executioner_frame(idle)), "dungeon_executioner", "idle_sprite.png")
+    save(sheet([up(executioner_frame(pose)) for pose in WALK_CYCLE]), "dungeon_executioner", "walking_spritesheet.png")
+    save(up(executioner_frame(idle, charge=True)), "dungeon_executioner", "charge_sprite.png")
+    save(make_axe(), "dungeon_executioner", "axe.png")
     print("Sprites gerados em", OUT)
 
 

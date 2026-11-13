@@ -5,10 +5,10 @@ Como rodar (a partir da raiz do repositório; requer Python 3 com Pillow):
 Opcional: --preview <pasta> grava versões ampliadas ×4 (não versionadas).
 
 Gera, de forma determinística, em game/assets/img/character/cavaleiro/:
-  idle_sprite.png          76x136
-  walking_spritesheet.png  76x544 (4 quadros de 76x136 empilhados na vertical)
-O desenho é feito na grade base de 38x68 e ampliado por SPRITE_SCALE (vizinho mais próximo,
-preserva o pixel art). O tamanho final é o de CreateKnightCharacter (player.cpp).
+  idle_sprite.png          53x95
+  walking_spritesheet.png  53x380 (4 quadros de 53x95 empilhados na vertical)
+O desenho é feito na grade base de 38x68 e cada quadro é ampliado por SPRITE_SCALE (vizinho mais
+próximo, tamanho arredondado; com fator não inteiro alguns pixels ficam mais largos que outros). O tamanho final é o de CreateKnightCharacter (player.cpp).
 O personagem é desenhado de frente, com os pés na base do quadro.
 """
 import os
@@ -17,7 +17,7 @@ from PIL import Image
 
 FRAME_W, FRAME_H = 38, 68
 # Ampliação aplicada só na saída: o personagem fica maior na tela sem redesenhar a grade.
-SPRITE_SCALE = 2
+SPRITE_SCALE = 1.4
 WALK_FRAMES = 4
 OUT_DIR = os.path.join("game", "assets", "img", "character", "cavaleiro")
 
@@ -152,7 +152,8 @@ def draw_frame(pose):
 
 
 def upscale(img):
-    return img.resize((img.width * SPRITE_SCALE, img.height * SPRITE_SCALE), Image.NEAREST)
+    size = (round(img.width * SPRITE_SCALE), round(img.height * SPRITE_SCALE))
+    return img.resize(size, Image.NEAREST)
 
 
 def main():
@@ -161,8 +162,14 @@ def main():
     sheet = Image.new("RGBA", (FRAME_W, FRAME_H * WALK_FRAMES), (0, 0, 0, 0))
     for i, pose in enumerate(WALK_POSES):
         sheet.paste(draw_frame(pose), (0, i * FRAME_H))
+    # Cada quadro é ampliado separadamente para todos terem a mesma altura arredondada.
+    big_frames = [upscale(draw_frame(pose)) for pose in WALK_POSES]
+    big_w, big_h = big_frames[0].size
+    big_sheet = Image.new("RGBA", (big_w, big_h * WALK_FRAMES), (0, 0, 0, 0))
+    for i, frame in enumerate(big_frames):
+        big_sheet.paste(frame, (0, i * big_h))
     upscale(idle).save(os.path.join(OUT_DIR, "idle_sprite.png"))
-    upscale(sheet).save(os.path.join(OUT_DIR, "walking_spritesheet.png"))
+    big_sheet.save(os.path.join(OUT_DIR, "walking_spritesheet.png"))
     if "--preview" in sys.argv:
         folder = sys.argv[sys.argv.index("--preview") + 1]
         os.makedirs(folder, exist_ok=True)

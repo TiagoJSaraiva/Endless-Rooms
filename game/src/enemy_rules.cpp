@@ -44,7 +44,7 @@ const std::array<EnemyDefinition, 3> kDungeonEnemies = [] {
     victim.collisionRadius = 22.0f;
     victim.spawnWeight = 1.0f;
     victim.pouches = {35, 5, 0};
-    victim.sprite = {"./assets/img/enemies/dungeon_victim", 68, 124, 4, 0.14f, "",
+    victim.sprite = {"./assets/img/enemies/dungeon_victim", 48, 87, 4, 0.14f, "",
                      "assets/img/enemies/dungeon_victim/bone.png"};
     victim.attack.pattern = AttackPattern::ThrownBone;
     victim.attack.damage = 5.0f;
@@ -65,7 +65,7 @@ const std::array<EnemyDefinition, 3> kDungeonEnemies = [] {
     guard.collisionRadius = 24.0f;
     guard.spawnWeight = 1.0f;
     guard.pouches = {35, 20, 0};
-    guard.sprite = {"./assets/img/enemies/dungeon_guard", 80, 140, 4, 0.16f,
+    guard.sprite = {"./assets/img/enemies/dungeon_guard", 56, 98, 4, 0.16f,
                     "assets/img/enemies/dungeon_guard/spear.png", ""};
     guard.attack.pattern = AttackPattern::Thrust;
     guard.attack.damage = 10.0f;
@@ -87,7 +87,7 @@ const std::array<EnemyDefinition, 3> kDungeonEnemies = [] {
     executioner.collisionRadius = 30.0f;
     executioner.spawnWeight = 0.35f;
     executioner.pouches = {0, 40, 40};
-    executioner.sprite = {"./assets/img/enemies/dungeon_executioner", 116, 176, 4, 0.22f,
+    executioner.sprite = {"./assets/img/enemies/dungeon_executioner", 81, 123, 4, 0.22f,
                           "assets/img/enemies/dungeon_executioner/axe.png", ""};
     executioner.attack.pattern = AttackPattern::Spin;
     executioner.attack.damage = 16.0f;
