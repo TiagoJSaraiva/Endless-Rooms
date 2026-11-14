@@ -4,6 +4,7 @@
 - Etapa 0 concluída: fluxo de agentes adaptado do `godot-template` (fluxos `/inicio` `/planejar` `/revisar` `/fim`, `scripts/check.ps1`, hook de toolchain, memória em `docs/`) e regra de commits pelo agente (decisão 0008).
 - Etapa 1 em andamento: 1.1 e 1.6 concluídas; 1.2 a 1.5 implementadas e aguardando validação jogando. Onda 1 (1.7, 1.8, 1.9a, 1.9b, 1.9c) implementada por subagentes, integrada na `main` com check completo passando; aguarda validação jogando.
 - Sprites do cavaleiro e dos inimigos ampliados em 1,4× (`SPRITE_SCALE` nos geradores de `tools/sprites/`). A área de dano virou o retângulo do corpo de cada sprite e os ataques saem da altura das mãos (`body_rules`); o colisor de movimento não mudou.
+- Ajustes de ambientação: mais tochas (raramente vizinhas) e tochas nas paredes laterais de salas normais e corredores; menos vasos; mais barris com vela, espalhados; salas especiais nunca vizinhas de outra do mesmo tipo.
 - Jogo jogável: lobby, salas geradas por bioma, combate melee/ranged, props e tochas com iluminação, reward pouches, inventário, loja, forja e baú.
 
 ## Roadmap até a demo
@@ -60,6 +61,7 @@ Concluída: cada subtarefa foi implementada por um subagente em branch própria,
 
 ## Próximo passo
 - Desenvolvedor: validar jogando 1.2 a 1.5 e a onda 1 (roteiros em `inimigos.md`, `armas.md`, `economia.md` e `balanceamento.md`), depois o playtest 1.9d; validar a escala 1,4× dos sprites, a área de dano retangular e a saída dos ataques pelas mãos (roteiro em `inimigos.md`; conferir também `displayOffset` de arco, cajado e espada em `armas.md`); jogar com os pesos de salas 71/12/12/5 (mais lojas e forjas, menos salas normais) e dizer se a quantidade de moedas por run continua boa.
+- Desenvolvedor: validar jogando os ajustes de ambientação (roteiro 9 em `props-e-iluminacao.md`): tamanho e posição das tochas laterais, quantidade de tochas, vasos e barris, luz geral das salas.
 - Depois da validação: 1.10 (UI) com o desenvolvedor.
 
 ## Bloqueios
