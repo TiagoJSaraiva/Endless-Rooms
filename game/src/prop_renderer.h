@@ -23,6 +23,8 @@ public:
     void Draw(const PropInstance& prop, float visibility, float elapsedSeconds);
     Vector2 LightPosition(const PropInstance& prop, float elapsedSeconds);
     static PropSpriteGeometry Geometry(const PropInstance& prop, int width, int height, float elapsedSeconds);
+    // Retângulo onde Draw desenha o sprite do prop (com o tamanho real da textura).
+    Rectangle SpriteBounds(const PropInstance& prop, float elapsedSeconds);
     // Shared by floor and wall props; bounds supplies horizontal fit and bottom anchor.
     static PropSpriteGeometry SpriteGeometry(Rectangle bounds, const std::optional<PropAnimation>& animation,
                                              int width, int height, float elapsedSeconds);

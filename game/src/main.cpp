@@ -2192,12 +2192,23 @@ int main() {
 
         drawDoors(false, false);
         std::vector<SceneActor> actors;
-        // Tochas laterais saem da parede para dentro do piso: ordenadas com os atores, como as de baixo.
-        for (const auto& view : wallPropViews)
-            if (view.prop->key.section == WallRules::Section::Bottom || view.prop->key.section == WallRules::Section::Side)
-                actors.push_back({view.prop->Depth(), [&, view] {
-                    WallPropRendering::Draw(view, propRenderer, propAnimationTime);
-                }});
+        std::vector<WallPropRules::FloorPropArea> floorPropAreas;
+        for (const auto& view : floorRooms) {
+            if (view.visibility <= 0) continue;
+            for (const auto& prop : view.room->Props())
+                if (!prop.destroyed)
+                    floorPropAreas.push_back({propRenderer.SpriteBounds(prop, propAnimationTime), prop.Depth()});
+        }
+        // Tochas laterais saem da parede para dentro do piso: ordenadas com os atores, como as de baixo,
+        // mas nunca cobertas por props de piso.
+        for (const auto& view : wallPropViews) {
+            const WallRules::Section section = view.prop->key.section;
+            if (section != WallRules::Section::Bottom && section != WallRules::Section::Side) continue;
+            const float depth = section == WallRules::Section::Side
+                ? WallPropRules::SideDrawDepth(*view.prop, floorPropAreas)
+                : view.prop->Depth();
+            actors.push_back({depth, [&, view] { WallPropRendering::Draw(view, propRenderer, propAnimationTime); }});
+        }
         for (const auto& view : floorRooms) {
             if (view.visibility <= 0) continue;
             for (const auto& pouch : view.room->RewardPouches()) {

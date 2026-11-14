@@ -63,4 +63,15 @@ std::vector<WallPropInstance> Generate(const std::vector<WallRules::RoomView>& r
                                      GenerationSettings settings = {});
 std::vector<WallPropView> VisibleInstances(const std::vector<WallPropInstance>& props,
                                          const std::vector<WallRules::RoomView>& rooms);
+
+// Sprite desenhado de um prop de piso e a profundidade com que ele entra na ordenação.
+struct FloorPropArea {
+    Rectangle sprite;
+    float depth;
+};
+
+// Profundidade de desenho de uma tocha lateral. A tocha sai da parede para dentro do piso e fica
+// acima de qualquer prop cujo sprite a cubra: recebe uma profundidade logo depois da maior entre
+// eles. Sem sobreposição, vale a dela (Depth), e personagens seguem ordenados pela posição.
+float SideDrawDepth(const WallPropInstance& prop, const std::vector<FloorPropArea>& floorProps);
 }

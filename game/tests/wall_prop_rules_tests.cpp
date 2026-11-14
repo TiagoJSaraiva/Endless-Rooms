@@ -191,6 +191,23 @@ void SideTorches() {
     assert(corridorSides > 0);
 }
 
+// Prop de piso cujo sprite cobre a tocha lateral fica abaixo dela; um prop afastado não muda nada.
+void SideTorchAboveFloorProps() {
+    auto room = MakeRoom({}, {0, 0, 12, 8});
+    const WallPropInstance* torch = nullptr;
+    const auto props = WallPropRules::Generate({{&room, 1}}, 7, GetWallPropDefinitions(), {1, 0, 1});
+    for (const auto& prop : props) if (prop.key.section == WallRules::Section::Side && !prop.FlipX()) { torch = &prop; break; }
+    assert(torch);
+    const Rectangle bounds = torch->Bounds();
+    // Vaso no tile encostado à parede, um tile abaixo: o sprite alto sobe até a tocha.
+    const float vaseDepth = bounds.y + bounds.height + TILE_SIZE;
+    const WallPropRules::FloorPropArea vase{{bounds.x, vaseDepth - 1.5f * TILE_SIZE, float(TILE_SIZE), 1.5f * TILE_SIZE}, vaseDepth};
+    const WallPropRules::FloorPropArea far{{bounds.x + 4 * TILE_SIZE, bounds.y, float(TILE_SIZE), float(TILE_SIZE)}, vaseDepth + 100};
+    assert(WallPropRules::SideDrawDepth(*torch, {}) == torch->Depth());
+    assert(WallPropRules::SideDrawDepth(*torch, {far}) == torch->Depth());
+    assert(WallPropRules::SideDrawDepth(*torch, {vase, far}) > vaseDepth);
+}
+
 // Tochas sorteadas em salas normais grandes: quantidade e pares encostados na mesma parede.
 struct TorchStats { int torches{0}; int adjacentPairs{0}; };
 
@@ -223,6 +240,6 @@ void DensityAndAdjacency() {
 }
 
 int main() {
-    DeterminismAndFit(); SpecialDoors(); SharedCorridorsAndReveal(); ExtensibleCatalog(); DensityAndAdjacency(); SideTorches();
+    DeterminismAndFit(); SpecialDoors(); SharedCorridorsAndReveal(); ExtensibleCatalog(); DensityAndAdjacency(); SideTorches(); SideTorchAboveFloorProps();
     std::cout << "Wall prop rules tests passed\n";
 }

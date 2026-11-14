@@ -24,6 +24,11 @@ std::uint64_t PlacementSeed(std::uint64_t seed, const WallPropKey& key) {
     return value;
 }
 
+// Interseção com área (bordas que só se tocam não contam); testes headless não linkam a raylib.
+bool Overlaps(const Rectangle& a, const Rectangle& b) {
+    return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+}
+
 bool Supports(const WallPropDefinition& definition, const WallRules::Module& module) {
     return definition.widthTiles > 0 && definition.widthTiles <= module.widthTiles &&
            std::isfinite(definition.weight) && definition.weight > 0 &&
@@ -238,5 +243,16 @@ std::vector<WallPropView> VisibleInstances(const std::vector<WallPropInstance>& 
         if (visibility > 0) result.push_back({&prop, visibility});
     }
     return result;
+}
+
+float SideDrawDepth(const WallPropInstance& prop, const std::vector<FloorPropArea>& floorProps) {
+    // Folga mínima para a tocha vir depois do prop no sort estável, sem passar de personagens
+    // que estejam visivelmente à frente dele.
+    constexpr float kAboveFloorPropDepth = 0.01f;
+    const Rectangle bounds = prop.Bounds();
+    float depth = prop.Depth();
+    for (const FloorPropArea& area : floorProps)
+        if (Overlaps(bounds, area.sprite)) depth = std::max(depth, area.depth + kAboveFloorPropDepth);
+    return depth;
 }
 }

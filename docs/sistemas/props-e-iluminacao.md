@@ -183,7 +183,9 @@ do registro.
 Upper props são desenhadas depois das paredes de fundo e antes dos atores.
 Bottom props participam da ordenação dos atores pela base do módulo e são
 cobertas pelo passe de paredes frontais. Tochas laterais também entram na
-ordenação dos atores, pela base do próprio sprite. A bottom continua transitando de
+ordenação dos atores, pela base do próprio sprite, mas nunca ficam sob props
+de piso: se o sprite de um prop cobre a tocha, ela recebe uma profundidade
+logo depois da dele (`WallPropRules::SideDrawDepth`). A bottom continua transitando de
 100% para 60% de opacidade em 0,2 s quando encobre o jogador. A tocha mantém
 sua própria opacidade: é vista através da parede translúcida, sem um segundo
 fade. O estado de oclusão não participa da emissão de luz.
@@ -262,6 +264,7 @@ Verificação manual em `game.exe`, iniciado de `game/`:
 9. Conferir tochas laterais nas paredes leste e oeste de salas normais e de
    corredores verticais: suporte encostado na parede, chama voltada para
    dentro, tamanho coerente com a tocha de cima, luz na sala certa e
-   ordenação ao passar na frente e atrás delas. A prévia
+   ordenação ao passar na frente e atrás delas; props de piso encostados
+   (vasos, barris) nunca as cobrem. A prévia
    `game/obj/side-torch-preview.png` (gerada por `test-wall-prop-render`)
    mostra o encaixe com os sprites reais.

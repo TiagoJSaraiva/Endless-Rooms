@@ -44,6 +44,12 @@ PropSpriteGeometry PropRenderer::SpriteGeometry(Rectangle bounds, const std::opt
     return {src,dest};
 }
 
+Rectangle PropRenderer::SpriteBounds(const PropInstance& p,float time) {
+    Texture2D texture=Acquire("assets/img/props/"+p.definition->id+".png");
+    if(!texture.id) return p.Hitbox(); // Draw desenha o retângulo de fallback no hitbox
+    return SpriteGeometry(p.Hitbox(),p.definition->animation,texture.width,texture.height,time).destination;
+}
+
 void PropRenderer::Draw(const PropInstance& p,float visibility,float time) {
     if(p.destroyed||visibility<=0) return;
     DrawSprite("assets/img/props/"+p.definition->id+".png",p.Hitbox(),p.definition->animation,visibility,time);
