@@ -31,6 +31,17 @@ bool Supports(const WallPropDefinition& definition, const WallRules::Module& mod
            std::find(definition.biomes.begin(), definition.biomes.end(), module.segment.biome) != definition.biomes.end();
 }
 
+// Verdadeiro se o módulo encosta numa prop já colocada na mesma linha de parede do mesmo anfitrião.
+bool TouchesPlaced(const std::vector<WallPropInstance>& placed, const WallPropKey& key, int widthTiles) {
+    for (const auto& prop : placed) {
+        if (!(prop.key.host == key.host) || prop.key.section != key.section ||
+            prop.key.position.y != key.position.y) continue;
+        if (prop.key.position.x + prop.definition->widthTiles == key.position.x ||
+            key.position.x + widthTiles == prop.key.position.x) return true;
+    }
+    return false;
+}
+
 bool DoorNeighbor(const WallRules::Module& module, const Room& room) {
     const auto& bounds = room.Layout().tileBounds;
     const auto& segment = module.segment;
@@ -116,7 +127,9 @@ std::vector<WallPropInstance> Generate(const std::vector<WallRules::RoomView>& r
 
         WallPropKey key{segment.host, segment.section, segment.position};
         std::mt19937_64 rng(PlacementSeed(seed, key));
-        if (!guaranteed && std::generate_canonical<double, 53>(rng) >= std::clamp(settings.occupancyChance, 0.0f, 1.0f)) continue;
+        float chance = std::clamp(settings.occupancyChance, 0.0f, 1.0f);
+        if (TouchesPlaced(result, key, module.widthTiles)) chance *= std::clamp(settings.adjacentChanceFactor, 0.0f, 1.0f);
+        if (!guaranteed && std::generate_canonical<double, 53>(rng) >= chance) continue;
         std::vector<const WallPropDefinition*> choices;
         std::vector<double> weights;
         for (const auto& definition : catalog) if (Supports(definition, module)) {

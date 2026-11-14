@@ -130,8 +130,11 @@ movimento e não causam dano nem oferecem interação.
 
 ### Geração e ciclo de vida
 
-- Salas normais de Dungeon usam chance de 35% por módulo elegível e reserva
-  de 2 tiles livres entre footprints na mesma superfície contínua.
+- Salas normais de Dungeon usam chance de 60% por módulo elegível. Se o
+  módulo encosta numa tocha já colocada na mesma parede, a chance cai para
+  60% × 0,2 = 12%: tochas vizinhas são possíveis, mas raras (~11% das
+  tochas). Não há espaçamento obrigatório (`gapTiles` 0). Em salas 20×16
+  isso dá ~58% mais tochas que a regra antiga (35% e 2 tiles de reserva).
 - Salas especiais de Dungeon recebem uma tocha garantida no módulo
   imediatamente à esquerda e à direita de cada porta north/south não selada.
   Um lado sem espaço é omitido, módulos compartilhados não duplicam props,
@@ -142,7 +145,7 @@ movimento e não causam dano nem oferecem interação.
 - Vãos, módulos residuais de 1 tile e módulos que cruzam anfitriões são
   excluídos. Lobby não recebe essas props.
 
-`WallPropRules::GenerationSettings` centraliza chance e espaçamento. O RNG
+`WallPropRules::GenerationSettings` centraliza chance, espaçamento e o fator de vizinhança. O RNG
 é independente do mapa, combate e props de chão. A geração usa todas as
 salas conhecidas com visibilidade plena e ordenação estável, sem depender
 da revelação ou ordem de entrada no mapa de salas.

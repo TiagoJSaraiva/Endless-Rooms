@@ -136,9 +136,38 @@ void ExtensibleCatalog() {
         assert(!prop.definition->animation && !prop.definition->light);
     }
 }
+// Tochas sorteadas em salas normais grandes: quantidade e pares encostados na mesma parede.
+struct TorchStats { int torches{0}; int adjacentPairs{0}; };
+
+TorchStats CountTorches(WallPropRules::GenerationSettings settings) {
+    TorchStats stats;
+    for (std::uint64_t seed = 1; seed <= 200; ++seed) {
+        auto room = MakeRoom({}, {0, 0, 20, 16});
+        auto props = WallPropRules::Generate({{&room, 1}}, seed, GetWallPropDefinitions(), settings);
+        for (const auto& prop : props) {
+            if (prop.key.section == WallRules::Section::Side) continue;
+            ++stats.torches;
+            for (const auto& other : props)
+                if (other.key.section == prop.key.section && other.key.position.y == prop.key.position.y &&
+                    other.key.position.x == prop.key.position.x + prop.definition->widthTiles) ++stats.adjacentPairs;
+        }
+    }
+    return stats;
+}
+
+void DensityAndAdjacency() {
+    const TorchStats previous = CountTorches({0.35f, 2, 1.0f});
+    const TorchStats current = CountTorches({});
+    std::cout << "Tochas em cima/embaixo (200 salas 20x16): " << current.torches << " (antes " << previous.torches
+              << "), pares vizinhos: " << current.adjacentPairs << std::endl;
+    assert(previous.adjacentPairs == 0);
+    // Mais tochas que antes, e vizinhas raras: no máximo 1 par a cada 8 tochas.
+    assert(current.torches > previous.torches * 1.3);
+    assert(current.adjacentPairs > 0 && current.adjacentPairs * 8 < current.torches);
+}
 }
 
 int main() {
-    DeterminismAndFit(); SpecialDoors(); SharedCorridorsAndReveal(); ExtensibleCatalog();
+    DeterminismAndFit(); SpecialDoors(); SharedCorridorsAndReveal(); ExtensibleCatalog(); DensityAndAdjacency();
     std::cout << "Wall prop rules tests passed\n";
 }

@@ -42,8 +42,12 @@ const std::vector<WallPropDefinition>& GetWallPropDefinitions();
 
 namespace WallPropRules {
 struct GenerationSettings {
-    float occupancyChance{0.35f};
-    int gapTiles{2};
+    float occupancyChance{0.6f};
+    // Distância mínima obrigatória entre props na mesma parede.
+    int gapTiles{0};
+    // Multiplica a chance quando o módulo encosta numa prop já colocada: tochas vizinhas
+    // ficam possíveis, mas raras (0,6 × 0,2 = 12%).
+    float adjacentChanceFactor{0.2f};
 };
 
 // Pure generation, using all generated rooms at full visibility, never the reveal state.
