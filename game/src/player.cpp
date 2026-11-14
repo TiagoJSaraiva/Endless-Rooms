@@ -89,6 +89,7 @@ PlayerCharacter CreateKnightCharacter() {
     knight.appearance.walking.frameCount = 4;
     knight.appearance.walking.secondsPerFrame = 0.14f; // Ajuste este valor para acelerar/ralentizar a animacao de caminhada.
     knight.appearance.walking.verticalLayout = true;
+    knight.appearance.body = {41.0f, 95.0f, 41.0f}; // corpo opaco do sprite; mãos em 29,5 px da base ×1,4
 
     knight.baseAttributes = PlayerAttributes{};
     // Sem bônus de personagem na demo: o cavaleiro começa com 100 PV e 0% de mitigação, e a defesa vem só

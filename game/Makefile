@@ -413,8 +413,8 @@ test: $(TEST_BIN) $(FLOOR_TEST_BIN) $(WALL_TEST_BIN) $(ROOM_GENERATION_TEST_BIN)
 	$(ENEMY_RULES_TEST_BIN)
 	$(BODY_RULES_TEST_BIN)
 
-$(BODY_RULES_TEST_BIN): tests/body_rules_tests.cpp src/body_rules.cpp src/body_rules.h
-	$(CC) -o $@ tests/body_rules_tests.cpp src/body_rules.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
+$(BODY_RULES_TEST_BIN): tests/body_rules_tests.cpp src/body_rules.cpp src/player.cpp $(wildcard src/*.h)
+	$(CC) -o $@ tests/body_rules_tests.cpp src/body_rules.cpp src/player.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
 
 $(DEBUG_CONFIG_TEST_BIN): tests/debug_config_tests.cpp src/debug_config.cpp src/debug_config.h
 	$(CC) -o $@ tests/debug_config_tests.cpp src/debug_config.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)

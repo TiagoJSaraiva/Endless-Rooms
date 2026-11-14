@@ -1,5 +1,7 @@
 #pragma once
 
+#include "body_rules.h"
+
 #include <algorithm>
 #include <string>
 
@@ -134,6 +136,8 @@ struct CharacterAnimationClip {
 struct CharacterAppearanceBlueprint {
     std::string idleSpritePath{};
     CharacterAnimationClip walking{};
+    // Área de dano e altura das mãos, medidas no sprite a partir dos pés (base do sprite).
+    BodyGeometry body{};
 };
 
 // Representa o herói jogável com atributos agregados e vida/armadura atuais.

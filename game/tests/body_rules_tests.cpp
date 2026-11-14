@@ -1,4 +1,5 @@
 #include "body_rules.h"
+#include "player.h"
 
 #include <cassert>
 #include <cmath>
@@ -53,6 +54,18 @@ void TestCenterIsMiddleOfHurtbox() {
     assert(Near(center.y, box.y + box.height * 0.5f));
 }
 
+// O corpo do cavaleiro cabe no quadro do sprite e é maior que o antigo círculo de dano (raio 20).
+void TestKnightBody() {
+    const PlayerCharacter knight = CreateKnightCharacter();
+    const BodyGeometry& body = knight.appearance.body;
+    constexpr float kOldDamageRadius = 20.0f;
+    assert(HasBody(body));
+    assert(body.width <= static_cast<float>(knight.appearance.walking.frameWidth));
+    assert(body.height <= static_cast<float>(knight.appearance.walking.frameHeight));
+    assert(body.width > kOldDamageRadius * 2.0f);
+    assert(body.handHeight > 0.0f && body.handHeight < body.height);
+}
+
 }  // namespace
 
 int main() {
@@ -60,6 +73,7 @@ int main() {
     TestHurtboxRestsOnFeetAndIsCentered();
     TestHandAnchorIsAboveFeetInsideHurtbox();
     TestCenterIsMiddleOfHurtbox();
+    TestKnightBody();
     std::cout << "Body rules tests passed." << std::endl;
     return 0;
 }

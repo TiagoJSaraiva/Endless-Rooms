@@ -665,6 +665,28 @@ Rectangle PlayerBounds(const Vector2& center) {
     };
 }
 
+// Pés do jogador: a base do sprite fica na borda inferior do colisor de movimento.
+Vector2 PlayerFeet(const Vector2& position) {
+    return Vector2{position.x, position.y + PLAYER_HALF_HEIGHT};
+}
+
+// Ponto de onde saem os ataques do jogador; sem corpo medido, a própria posição.
+Vector2 PlayerHands(const PlayerCharacter& player, const Vector2& position) {
+    const BodyGeometry& body = player.appearance.body;
+    return BodyRules::HasBody(body) ? BodyRules::HandAnchor(PlayerFeet(position), body) : position;
+}
+
+// Alvo dos ataques inimigos: o corpo do sprite; sem corpo medido, o círculo do colisor.
+ProjectileTarget PlayerDamageTarget(const PlayerCharacter& player, const Vector2& position) {
+    const auto id = reinterpret_cast<std::uintptr_t>(&player);
+    const BodyGeometry& body = player.appearance.body;
+    if (!BodyRules::HasBody(body)) {
+        return ProjectileTarget{id, position, PLAYER_COLLISION_RADIUS, std::nullopt, 0.0f};
+    }
+    const Vector2 feet = PlayerFeet(position);
+    return ProjectileTarget{id, BodyRules::Center(feet, body), 0.0f, BodyRules::Hurtbox(feet, body), 0.0f};
+}
+
 // Ajusta a posição para fora de um retângulo qualquer usando separação mínima.
 Vector2 ResolveCollisionWithRectangle(const Rectangle& obstacle,
                                       Vector2 position,
@@ -1389,14 +1411,17 @@ int main() {
 
         Vector2 mouseScreen = GetMousePosition();
         Vector2 mouseWorld = GetScreenToWorld2D(mouseScreen, camera);
-        Vector2 aim = Vector2Subtract(mouseWorld, playerPosition);
+        const Vector2 playerHands = PlayerHands(player, playerPosition);
+        Vector2 aim = Vector2Subtract(mouseWorld, playerHands);
         if (Vector2LengthSqr(aim) < 1e-6f) {
             aim = Vector2{1.0f, 0.0f};
         }
 
         // Contexto base para criação de projéteis disparados no frame atual.
         ProjectileSpawnContext spawnContext{};
-        spawnContext.origin = playerPosition;
+        spawnContext.origin = playerHands;
+        // A sombra fica na posição do jogador, como antes das mãos: o corte nas paredes não muda.
+        spawnContext.height = playerPosition.y - playerHands.y;
         spawnContext.followTarget = &playerPosition;
         spawnContext.aimDirection = aim;
 
@@ -1427,7 +1452,8 @@ int main() {
                     playerPosition,
                     *enemyRoom,
                     playerInside,
-                    enemyProjectileSystem
+                    enemyProjectileSystem,
+                    PlayerDamageTarget(player, playerPosition).center
                 };
                 enemyPtr->Update(enemyContext);
             }
@@ -1601,7 +1627,7 @@ int main() {
         // Atualiza disparos inimigos e coleta dano recebido pelo jogador.
         enemyProjectileSystem.Update(delta);
 
-        std::vector<ProjectileTarget> incomingTargets{{reinterpret_cast<std::uintptr_t>(&player), playerPosition, PLAYER_COLLISION_RADIUS, std::nullopt, 0}};
+        std::vector<ProjectileTarget> incomingTargets{PlayerDamageTarget(player, playerPosition)};
         appendPropTargets(incomingTargets);
         auto incomingEvents = enemyProjectileSystem.CollectDamageEventsForTargets(incomingTargets);
         damageProps(incomingEvents, 1.0f);
