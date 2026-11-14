@@ -46,6 +46,7 @@ const std::array<EnemyDefinition, 3> kDungeonEnemies = [] {
     victim.pouches = {35, 5, 0};
     victim.sprite = {"./assets/img/enemies/dungeon_victim", 48, 87, 4, 0.14f, "",
                      "assets/img/enemies/dungeon_victim/bone.png"};
+    victim.body = {36.0f, 84.0f, 36.0f};  // osso sai da mão
     victim.attack.pattern = AttackPattern::ThrownBone;
     victim.attack.damage = 5.0f;
     victim.attack.startRange = 480.0f;
@@ -67,6 +68,7 @@ const std::array<EnemyDefinition, 3> kDungeonEnemies = [] {
     guard.pouches = {35, 20, 0};
     guard.sprite = {"./assets/img/enemies/dungeon_guard", 56, 98, 4, 0.16f,
                     "assets/img/enemies/dungeon_guard/spear.png", ""};
+    guard.body = {40.0f, 87.0f, 52.0f};  // lança na altura do peito, como no quadro de carga
     guard.attack.pattern = AttackPattern::Thrust;
     guard.attack.damage = 10.0f;
     guard.attack.startRange = 120.0f;
@@ -89,6 +91,7 @@ const std::array<EnemyDefinition, 3> kDungeonEnemies = [] {
     executioner.pouches = {0, 40, 40};
     executioner.sprite = {"./assets/img/enemies/dungeon_executioner", 81, 123, 4, 0.22f,
                           "assets/img/enemies/dungeon_executioner/axe.png", ""};
+    executioner.body = {53.0f, 105.0f, 43.0f};  // giro na altura das mãos
     executioner.attack.pattern = AttackPattern::Spin;
     executioner.attack.damage = 16.0f;
     executioner.attack.startRange = 130.0f;

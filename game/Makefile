@@ -419,8 +419,8 @@ $(BODY_RULES_TEST_BIN): tests/body_rules_tests.cpp src/body_rules.cpp src/body_r
 $(DEBUG_CONFIG_TEST_BIN): tests/debug_config_tests.cpp src/debug_config.cpp src/debug_config.h
 	$(CC) -o $@ tests/debug_config_tests.cpp src/debug_config.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
 
-$(ENEMY_RULES_TEST_BIN): tests/enemy_rules_tests.cpp src/enemy_rules.cpp src/enemy_attacks.cpp src/reward_pouch.cpp $(wildcard src/*.h)
-	$(CC) -o $@ tests/enemy_rules_tests.cpp src/enemy_rules.cpp src/enemy_attacks.cpp src/reward_pouch.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
+$(ENEMY_RULES_TEST_BIN): tests/enemy_rules_tests.cpp src/enemy_rules.cpp src/body_rules.cpp src/enemy_attacks.cpp src/reward_pouch.cpp $(wildcard src/*.h)
+	$(CC) -o $@ tests/enemy_rules_tests.cpp src/enemy_rules.cpp src/body_rules.cpp src/enemy_attacks.cpp src/reward_pouch.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
 
 $(RUN_STATS_TEST_BIN): tests/run_stats_tests.cpp src/run_stats.cpp src/room.cpp $(wildcard src/*.h)
 	$(CC) -o $@ tests/run_stats_tests.cpp src/run_stats.cpp src/room.cpp $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) -D$(PLATFORM)
@@ -437,7 +437,7 @@ $(ECONOMY_TEST_BIN): tests/economy_tests.cpp $(ECONOMY_SOURCES) $(wildcard src/*
 	$(CC) -o $@ tests/economy_tests.cpp $(ECONOMY_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
 PROP_COMBAT_SOURCES = src/projectile.cpp src/projectile_melee.cpp src/projectile_ranged.cpp src/combat_geometry.cpp
-PROP_GAMEPLAY_SOURCES = $(PROP_COMBAT_SOURCES) src/enemy.cpp src/enemy_common.cpp src/enemy_spawner.cpp src/enemy_rules.cpp src/enemy_attacks.cpp src/reward_pouch.cpp src/weapon_blueprints.cpp src/player.cpp src/prop.cpp src/prop_rules.cpp src/room.cpp src/room_collision_rules.cpp
+PROP_GAMEPLAY_SOURCES = $(PROP_COMBAT_SOURCES) src/body_rules.cpp src/enemy.cpp src/enemy_common.cpp src/enemy_spawner.cpp src/enemy_rules.cpp src/enemy_attacks.cpp src/reward_pouch.cpp src/weapon_blueprints.cpp src/player.cpp src/prop.cpp src/prop_rules.cpp src/room.cpp src/room_collision_rules.cpp
 $(WEAPON_RULES_TEST_BIN): tests/weapon_rules_tests.cpp src/weapon_rules.cpp $(PROP_GAMEPLAY_SOURCES) $(wildcard src/*.h) raylib_build
 	$(CC) -o $@ tests/weapon_rules_tests.cpp src/weapon_rules.cpp $(PROP_GAMEPLAY_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 

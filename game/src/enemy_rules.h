@@ -1,5 +1,6 @@
 #pragma once
 
+#include "body_rules.h"
 #include "reward_pouch.h"
 #include "room_types.h"
 
@@ -77,10 +78,13 @@ struct EnemyDefinition {
     const char* name{""};
     float maxHealth{1.0f};
     float speed{0.0f};
-    float collisionRadius{0.0f};
+    float collisionRadius{0.0f};  // colisor de movimento, nos pés
     float spawnWeight{1.0f};
     PouchChances pouches{};
     SpriteDefinition sprite{};
+    // Área de dano e altura de onde saem os ataques, medidas no sprite sem a arma
+    // (tools/sprites/dungeon_enemies.py, já com SPRITE_SCALE).
+    BodyGeometry body{};
     AttackDefinition attack{};
 };
 

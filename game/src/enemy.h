@@ -5,8 +5,11 @@
 #include <memory>
 #include <string>
 
+#include "body_rules.h"
 #include "room_types.h"
 #include "reward_pouch.h"
+
+#include <optional>
 
 class Room;
 class PlayerCharacter;
@@ -33,6 +36,8 @@ struct EnemyUpdateContext {
     const Room& room;
     bool playerInSameRoom{false};
     ProjectileSystem& projectileSystem;
+    // Centro do corpo do jogador, para onde os ataques miram; ausente = playerPosition.
+    std::optional<Vector2> playerAimPoint{};
 };
 
 // Parâmetros globais para desenhar inimigos.
@@ -72,6 +77,14 @@ public:
     float GetHalfWidth() const { return collisionHalfWidth_; }
     float GetHalfHeight() const { return collisionHalfHeight_; }
 
+    // Área de dano e ponto de saída dos ataques (body_rules.h), com os pés em GetPosition().
+    // Sem corpo medido (inimigos de caverna e mansão), o alvo é o círculo de
+    // GetCollisionRadius e os ataques saem da posição.
+    const BodyGeometry& GetBody() const { return body_; }
+    bool HasBody() const { return BodyRules::HasBody(body_); }
+    Rectangle GetHurtbox() const { return BodyRules::Hurtbox(position_, body_); }
+    Vector2 GetHandAnchor() const { return BodyRules::HandAnchor(position_, body_); }
+
     float GetSpeed() const { return speed_; }
     float GetHealthFraction() const { return (maxHealth_ > 0.0f) ? (currentHealth_ / maxHealth_) : 0.0f; }
     bool HasTakenDamage() const { return hasTakenDamage_; }
@@ -107,6 +120,7 @@ protected:
     Vector2 MoveTowards(const Vector2& target, float deltaSeconds, float speed) const;
 
     Room* GetRoom() const { return room_; }
+    void SetBody(const BodyGeometry& body) { body_ = body; }
 
     float collisionHalfWidth_{20.0f};
     float collisionHalfHeight_{18.0f};
@@ -139,4 +153,5 @@ private:
     bool hasTakenDamage_{false};
 
     float collisionRadius_{22.0f};
+    BodyGeometry body_{};
 };

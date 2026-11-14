@@ -97,7 +97,9 @@ EnemyCommon::EnemyCommon(const EnemyConfig& config,
       range_(definition.attack.startRange),
       spriteInfo_(spriteInfo),
       definition_(&definition),
-      damageMultiplier_(damageMultiplier) {}
+      damageMultiplier_(damageMultiplier) {
+    SetBody(definition.body);
+}
 
 // Carrega texturas de idle/caminhada apenas uma vez.
 void EnemyCommon::EnsureTexturesLoaded() const {
@@ -140,7 +142,10 @@ void EnemyCommon::Update(const EnemyUpdateContext& context) {
     float distance = Vector2Length(toPlayer);
 
     if (definition_ != nullptr) {
-        UpdateDefinedEnemy(context, toPlayer, distance);
+        // Ataques saem das mãos e miram o centro do corpo do jogador; alcance medido entre os dois.
+        const Vector2 aimPoint = context.playerAimPoint.value_or(context.playerPosition);
+        const Vector2 toTarget = Vector2Subtract(aimPoint, GetHandAnchor());
+        UpdateDefinedEnemy(context, toTarget, Vector2Length(toTarget));
         return;
     }
 
@@ -214,7 +219,8 @@ void EnemyCommon::FireDefinedAttack(const EnemyUpdateContext& context) {
     ProjectileBlueprint projectile = EnemyAttacks::BuildProjectile(*definition_, damageMultiplier_);
 
     ProjectileSpawnContext spawnContext{};
-    spawnContext.origin = GetPosition();
+    spawnContext.origin = GetHandAnchor();
+    spawnContext.height = GetBody().handHeight;
     spawnContext.followTarget = GetPositionAddress();
     // Estocada e giro seguem o inimigo: somem junto com ele (ver diagnostico-de-crashes.md).
     spawnContext.ownerLifetime = GetProjectileLifetime();

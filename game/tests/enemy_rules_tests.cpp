@@ -241,8 +241,22 @@ void TestMovementAndCancel() {
 
 }  // namespace
 
+void TestBodies() {
+    // A área de dano cobre o corpo dentro do quadro do sprite e as mãos ficam dentro dela.
+    for (const EnemyDefinition& definition : DungeonEnemies()) {
+        const BodyGeometry& body = definition.body;
+        assert(BodyRules::HasBody(body));
+        assert(body.width <= static_cast<float>(definition.sprite.frameWidth));
+        assert(body.height <= static_cast<float>(definition.sprite.frameHeight));
+        assert(body.handHeight > 0.0f && body.handHeight < body.height);
+        // O corpo é maior que o antigo círculo de dano nos pés.
+        assert(body.width > definition.collisionRadius);
+    }
+}
+
 int main() {
     TestAttributes();
+    TestBodies();
     TestAttackGeometry();
     TestPouches();
     TestEnemyCountForArea();

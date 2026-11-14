@@ -262,8 +262,40 @@ void CheckDungeonEnemyAttacks() {
     assert(executioner.firstHitSeconds >= 0.8f - 0.05f);
 }
 
+// Acertos de um Victim parado que mira `aimPoint`, contados num alvo circular em `target`.
+int VictimHitsAt(Vector2 aimPoint, Vector2 target) {
+    RoomLayout layout; layout.widthTiles = 20; layout.heightTiles = 20; layout.tileBounds = {0, 0, 20, 20};
+    Room room({}, {RoomType::Normal, BiomeType::Dungeon, 1}, layout);
+    const EnemyRules::EnemyDefinition& definition = EnemyRules::Definition(EnemyRules::EnemyKind::Victim);
+    EnemyConfig config; config.maxHealth = definition.maxHealth; config.speed = definition.speed;
+    auto player = CreateKnightCharacter();
+    ProjectileSystem shots;
+    EnemyCommon enemy(config, definition, EnemySpriteInfo{}, 1.0f);
+    enemy.Initialize(room, {300, 300});
+    int hits = 0;
+    constexpr float kStep = 0.01f;
+    for (float time = 0.0f; time < 2.0f; time += kStep) {
+        EnemyUpdateContext context{kStep, player, {aimPoint.x, 300}, room, true, shots};
+        context.playerAimPoint = aimPoint;
+        enemy.Update(context);
+        shots.Update(kStep);
+        hits += static_cast<int>(shots.CollectDamageEvents(target, 10.0f, 99, 0.0f).size());
+    }
+    return hits;
+}
+
+void CheckDungeonAttacksLeaveFromHands() {
+    // Jogador na mesma linha dos pés: o osso sai das mãos e voa na altura delas. Perto do
+    // inimigo, um osso saído dos pés passaria rente ao chão, longe do alvo na altura das mãos.
+    const float handHeight = EnemyRules::Definition(EnemyRules::EnemyKind::Victim).body.handHeight;
+    assert(handHeight > 0.0f);
+    const Vector2 aimPoint{600, 300 - handHeight};
+    assert(VictimHitsAt(aimPoint, {360, 300 - handHeight}) >= 1);
+    assert(VictimHitsAt(aimPoint, {360, 300}) == 0);
+}
+
 int main() {
     CheckFollowingFamilies(); CheckReusedAddress(); CheckIndependentAttacks(); CheckEnemyDeathAndRespawn();
-    CheckDungeonEnemyAttacks(); CheckFollowingFamiliesKeepOriginOffset();
+    CheckDungeonEnemyAttacks(); CheckFollowingFamiliesKeepOriginOffset(); CheckDungeonAttacksLeaveFromHands();
     std::cout << "Projectile lifetime tests passed\n";
 }

@@ -1498,9 +1498,17 @@ int main() {
         std::vector<ProjectileTarget> playerTargets;
         auto activeEnemies = roomEnemies.find(roomManager.GetCurrentCoords());
         if (activeEnemies != roomEnemies.end()) {
-            for (const auto& enemy : activeEnemies->second)
-                if (enemy && enemy->IsAlive() && enemy->HasCompletedFade())
-                    playerTargets.push_back({reinterpret_cast<std::uintptr_t>(enemy.get()), enemy->GetPosition(), enemy->GetCollisionRadius(), std::nullopt, 0});
+            for (const auto& enemy : activeEnemies->second) {
+                if (!enemy || !enemy->IsAlive() || !enemy->HasCompletedFade()) {
+                    continue;
+                }
+                const auto targetId = reinterpret_cast<std::uintptr_t>(enemy.get());
+                if (enemy->HasBody()) {
+                    playerTargets.push_back({targetId, BodyRules::Center(enemy->GetPosition(), enemy->GetBody()), 0, enemy->GetHurtbox(), 0});
+                } else {
+                    playerTargets.push_back({targetId, enemy->GetPosition(), enemy->GetCollisionRadius(), std::nullopt, 0});
+                }
+            }
         }
         auto& combatRoom = roomManager.GetCurrentRoom();
         auto appendPropTargets = [&](std::vector<ProjectileTarget>& targets) {
