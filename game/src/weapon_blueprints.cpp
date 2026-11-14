@@ -181,12 +181,12 @@ ProjectileBlueprint MakeEspadaRunicaProjectileBlueprint() {
     blueprint.common.weaponSpritePath = "assets/img/weapons/Espada_Runica.png"; // Sprite renderizado a frente do jogador
     blueprint.common.displayMode = WeaponDisplayMode::AimAligned; // Garante que o sprite siga a direcao do giro
     blueprint.common.displayOffset = Vector2{1.0f, -4.0f}; // Posiciona a empunhadura no centro do jogador
-    blueprint.common.displayLength = 130.0f;
-    blueprint.common.displayThickness = 34.0f;
+    blueprint.common.displayLength = 150.0f;
+    blueprint.common.displayThickness = 40.0f;
     blueprint.common.perTargetHitCooldownSeconds = 0.4f; // Permite multihits com janela controlada
 
-    blueprint.fullCircle.length = 130.0f; // Spin reaches slightly further than a typical sword
-    blueprint.fullCircle.thickness = 34.0f; // Wide arc to cover the entire spin radius
+    blueprint.fullCircle.length = 150.0f; // Spin reaches slightly further than a typical sword
+    blueprint.fullCircle.thickness = 40.0f; // Wide arc to cover the entire spin radius
     blueprint.fullCircle.revolutions = 1.6f; // Spin travels a bit more than a full rotation
     blueprint.fullCircle.angularSpeedDegreesPerSecond = 480.0f; // Fast revolution to feel explosive
     blueprint.fullCircle.followOwner = true; // Spin continues tracking the player position
@@ -202,7 +202,7 @@ WeaponBlueprint MakeEspadaRunicaWeaponBlueprint() {
     blueprint.cooldownSeconds = 2.6f; // Base downtime before another rune spin is ready
     blueprint.holdToFire = false; // Requires deliberate activation
     blueprint.attributeKey = WeaponAttributeKey::Mysticism; // Rune blade scales with magical prowess
-    blueprint.damage.baseDamage = 32.5f; // Substantial base damage even without attributes
+    blueprint.damage.baseDamage = 36.0f; // Substantial base damage even without attributes
     blueprint.damage.attributeScaling = 2.4f; // High scaling to reward invested Mysticism
     blueprint.cadence.baseAttacksPerSecond = 0.55f; // Slow attack rate befitting a heavy finisher
     blueprint.cadence.dexterityGainPerPoint = 0.06f; // Dexterity slightly trims the downtime
@@ -325,7 +325,7 @@ WeaponBlueprint MakeCajadoDeCarvalhoWeaponBlueprint() {
     blueprint.holdToFire = true; // Each pulse needs a tap; hold-to-channel can be added later
     blueprint.usesSeparateProjectileSprite = true; // Arma e projetil possuem sprites distintos
     blueprint.attributeKey = WeaponAttributeKey::Knowledge; // Damage scales with Knowledge for casters
-    blueprint.damage.baseDamage = 6.0f; // Base damage per beam tick
+    blueprint.damage.baseDamage = 4.5f; // Base damage per beam tick
     blueprint.damage.attributeScaling = 1.9f; // Strong scaling to emphasize spellcasting stats
     blueprint.cadence.baseAttacksPerSecond = 1.6f; // Moderate fire rate suitable for a staff
     blueprint.cadence.dexterityGainPerPoint = 0.08f; // Dexterity slightly speeds up pulses
