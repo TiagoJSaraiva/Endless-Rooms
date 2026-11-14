@@ -33,9 +33,10 @@ struct RoomTypeWeight {
 // removida junto com a sala de boss na demo. Quando o boss voltar, será preciso reintroduzir
 // uma chance que cresça com o avanço da run, de forma melhor que a antiga.
 constexpr std::array<RoomTypeWeight, 4> kRoomTypeWeights{{
-    {RoomType::Normal, 79.0},
-    {RoomType::Forge, 5.0}, // ajustar para mudar a frequência de forjas
-    {RoomType::Shop, 5.0},
+    // Somam 100: lê-se como porcentagem por sala gerada. Normal fica com o restante.
+    {RoomType::Normal, 71.0},
+    {RoomType::Forge, 12.0},
+    {RoomType::Shop, 12.0},
     {RoomType::Chest, 5.0},
 }};
 

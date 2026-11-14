@@ -40,7 +40,7 @@ Subtarefas, em ordem de execução. Metas numéricas em [balanceamento.md](siste
 - [ ] **1.9 Balanceamento aplicado**:
   - [ ] **1.9a Armas** (onda 1): `poder` aplicado ao dano (`× (1 + poder/100)`) e DPS por tier (Cajado, Broquel, Espada Rúnica). Entregável: testes de DPS por tier e de `poder`; nota `sistemas/armas.md` com os pontos de ajuste manual. *Implementada; falta validação jogando ([armas.md](sistemas/armas.md)).*
   - [ ] **1.9b Economia e modo debug** (onda 1): `debug.txt` (Kit do Testador nos 4 slots e nos pools só quando ligado), cavaleiro sem bônus de personagem, tabela de valores por raridade, venda a 30%, loja com poção garantida e peso por raridade, baú por peso de raridade, custo da forja = 80% do valor do produto. Entregável: testes headless dessas regras. *Implementada; falta validação jogando ([economia.md](sistemas/economia.md)).*
-  - [ ] **1.9c Salas** (onda 1): simulação de seeds medindo salas especiais visíveis até a 10ª sala visitada e comentário em `kRoomTypeWeights` sobre reintroduzir a chance de boss crescente. *Concluída: loja visível em 70,0% das runs (no limite da meta; ver balanceamento.md).*
+  - [ ] **1.9c Salas** (onda 1): simulação de seeds medindo salas especiais visíveis até a 10ª sala visitada e comentário em `kRoomTypeWeights` sobre reintroduzir a chance de boss crescente. *Concluída: com os pesos 71/12/12/5, loja visível em 91,6% das runs (ver balanceamento.md).*
   - [ ] **1.9d Playtest** pelo desenvolvedor, com o roteiro de `balanceamento.md`. Depende de 1.7 a 1.9c.
 - [ ] **1.10 UI**: revisão visual do HUD e das telas de loja, forja, baú e inventário, sem regras novas e validada com o desenvolvedor. Depois da onda 1.
 - [ ] **1.11 Equipamentos de atributos de ataque**: equipamentos que concedem Força, Foco, Conhecimento (e talvez Constituição e Misticismo) e as receitas de forja correspondentes. Escopo a definir pelo desenvolvedor em sessão futura.
@@ -59,7 +59,7 @@ Concluída: cada subtarefa foi implementada por um subagente em branch própria,
 - Retomar os biomas caverna e mansão.
 
 ## Próximo passo
-- Desenvolvedor: validar jogando 1.2 a 1.5 e a onda 1 (roteiros em `inimigos.md`, `armas.md`, `economia.md` e `balanceamento.md`), depois o playtest 1.9d; validar a escala 1,4× dos sprites, a área de dano retangular e a saída dos ataques pelas mãos (roteiro em `inimigos.md`; conferir também `displayOffset` de arco, cajado e espada em `armas.md`); decidir se os pesos de salas sobem para 70/10/10/10 (folga na meta de loja visível).
+- Desenvolvedor: validar jogando 1.2 a 1.5 e a onda 1 (roteiros em `inimigos.md`, `armas.md`, `economia.md` e `balanceamento.md`), depois o playtest 1.9d; validar a escala 1,4× dos sprites, a área de dano retangular e a saída dos ataques pelas mãos (roteiro em `inimigos.md`; conferir também `displayOffset` de arco, cajado e espada em `armas.md`); jogar com os pesos de salas 71/12/12/5 (mais lojas e forjas, menos salas normais) e dizer se a quantidade de moedas por run continua boa.
 - Depois da validação: 1.10 (UI) com o desenvolvedor.
 
 ## Bloqueios

@@ -51,7 +51,7 @@ DPS = dano × ataques/s × (1 + chance crítica × (mult − 1)), contando só o
 |---|---|
 | Sala normal | lados pares de 10 a 20 tiles (média 225 tiles); especiais 8×8 |
 | Inimigos por sala normal | `round(área × 0,03)`, mínimo 1: média 6,8 |
-| Tipos de sala | Normal 79, Forge 5, Shop 5, Chest 5 (fixos desde a 1.3) |
+| Tipos de sala | Normal 71, Forge 12, Shop 12, Chest 5 |
 | Bolsa do inimigo da Dungeon | small/medium/big 50/20/5%: ~17 moedas por inimigo |
 | Vaso | 20% de bolsa small (3,2 moedas) |
 | Valor do item | `20 × raridade + baseValue`; compra `round(valor × 1,3)`; venda `round(valor × 0,2)` |
@@ -172,7 +172,7 @@ Tabela de valores por raridade (uma única tabela de dados). Compra = `valor × 
 | Épico (4) | 370 | 480 | 111 |
 | Lendário (5) | 600 | 780 | 180 |
 
-O que cabe numa run (~650 moedas, ~1,6 lojas visíveis):
+O que cabe numa run (~650 moedas, loja visível em ~92% das runs):
 - Cura: 1 a 3 poções por loja, 45 cada.
 - 1 arma ou peça de raridade 2 a 3 (195 a 325).
 - Raridade 4 só juntando moedas ou achando em baú; raridade 5 (780) praticamente só em baú.
@@ -192,14 +192,14 @@ Loja, baú e forja:
 
 ### Pesos de tipos de sala
 
-Mantidos: Normal 79, Forge 5, Shop 5, Chest 5 (84% / 5,3% cada). Cada porta gera uma sala na hora (~2,5 salas novas por sala visitada; ~30 geradas em 12 visitas): P(ao menos uma Shop entre 30) ≈ 80%. Resultado da simulação de seeds (1.9c, `room_simulation_tests`, 500 runs, 10 salas visitadas; ~4 salas geradas por sala visitada):
+Vigentes, escolhidos pelo desenvolvedor: Normal 71, Forge 12, Shop 12, Chest 5 (somam 100, então cada peso é a porcentagem por sala gerada). Resultado da simulação de seeds (1.9c, `room_simulation_tests`, 500 runs, 10 salas visitadas; ~4 salas geradas por sala visitada):
 
 | Pesos | Loja visível | Forja visível | Baú visível |
 |---|---:|---:|---:|
-| 79/5/5/5 (vigente) | 70,0% | 65,8% | 63,6% |
-| 70/10/10/10 (alternativa) | 89,0% | 87,4% | 86,0% |
+| 71/12/12/5 (vigente) | 91,6% | 93,0% | 61,2% |
+| 79/5/5/5 (anterior) | 70,0% | 65,8% | 63,6% |
 
-Os pesos vigentes atingem a meta no limite exato (70,0%), e o teste trava ≥ 70%. Qualquer mudança na geração pode derrubá-lo; a alternativa dá folga e cabe ao desenvolvedor decidir.
+A meta de loja visível (≥ 70%, travada pelo teste) tem folga. Em média, cada run gera 4,7 lojas, 4,8 forjas e 1,9 baús.
 
 ## Atributos dos inimigos (1.7)
 
