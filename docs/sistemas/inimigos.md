@@ -33,6 +33,8 @@ Três inimigos (Victim, Guard, Executioner) substituem `dungeon_melee` e `dungeo
 Crítico 0 e mitigação própria 0 nos três. Colisão de parede e de props vale como nos demais inimigos; ossos param na parede (`SetPassableAreas`).
 
 ## Área de dano e saída dos ataques
+Decisão [0010](../decisoes/0010-corpo-do-sprite-no-combate.md).
+
 - `EnemyDefinition::body` (`BodyGeometry`, regras em `body_rules.h`) mede o corpo no sprite, sem a arma, a partir dos pés (`GetPosition()`). O colisor de movimento continua sendo o raio nos pés.
 - Projéteis do jogador acertam o retângulo `GetHurtbox()` (base nos pés, centrado em x). Inimigos sem `body` (caverna e mansão) mantêm o círculo de `GetCollisionRadius` nos pés.
 - Os ataques saem de `GetHandAnchor()` e miram `EnemyUpdateContext::playerAimPoint` (centro do corpo do jogador; sem ele, `playerPosition`). O alcance de início é medido entre esses dois pontos. A perseguição continua indo até `playerPosition`.
