@@ -10,6 +10,8 @@ Define como o dano das armas é calculado, o DPS esperado por raridade e onde re
 - `game/src/ui_inventory.cpp`: mostra a linha "Dano" lendo `derived.damagePerShot`; não recalcula Poder quando o valor derivado existe.
 
 ## Regras
+- Origem: ataques do jogador saem das mãos do cavaleiro (`PlayerHands` em `main.cpp`, a partir de `appearance.body`) e miram do mesmo ponto até o mouse. Golpes que seguem o jogador mantêm essa altura enquanto ele anda. `displayOffset` dos blueprints é relativo às mãos.
+- Inimigos recebem dano no retângulo do corpo (ver [inimigos](inimigos.md)).
 - Dano por golpe: `(dano base + escala × atributo de ataque) × max(0, 1 + poder/100)`. O Poder é aplicado só em `RecalculateDerivedStats`; `main.cpp` e a UI usam o valor já multiplicado. Poder muito negativo zera o dano em vez de invertê-lo.
 - DPS (alvo único, atributos de ataque e Poder zerados, só os passivos da própria arma): `dano × ataques/s × acertos por uso × (1 + chance crítica × (mult − 1))`.
   - Ataques/s = `baseAttacksPerSecond + dexterityGainPerPoint × Destreza passiva`, limitado por `attacksPerSecondCap`.

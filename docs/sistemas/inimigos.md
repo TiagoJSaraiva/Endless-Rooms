@@ -16,7 +16,9 @@ Três inimigos (Victim, Guard, Executioner) substituem `dungeon_melee` e `dungeo
 |---|---|---|---|
 | Vida | 20 | 45 | 130 |
 | Velocidade (px/s) | 170 | 140 | 90 |
-| Raio de colisão (px) | 22 | 24 | 30 |
+| Colisor de movimento (raio, px) | 22 | 24 | 30 |
+| Área de dano (largura × altura, px) | 36×84 | 40×87 | 53×105 |
+| Altura de saída do ataque (px) | 36 (mão) | 52 (peito, lança da carga) | 43 (mãos) |
 | Ataque | osso em linha reta (família munição arremessada) | estocada (família `Spear`, como a Machadinha) | giro (família `FullCircleSwing`, como a Espada Rúnica) |
 | Dano | 5 | 10 | 16 por acerto |
 | Início do ataque (px) | 480 | 120 | 130 |
@@ -29,6 +31,12 @@ Três inimigos (Victim, Guard, Executioner) substituem `dungeon_melee` e `dungeo
 | Moedas esperadas | 7,1 | 11,6 | 36 |
 
 Crítico 0 e mitigação própria 0 nos três. Colisão de parede e de props vale como nos demais inimigos; ossos param na parede (`SetPassableAreas`).
+
+## Área de dano e saída dos ataques
+- `EnemyDefinition::body` (`BodyGeometry`, regras em `body_rules.h`) mede o corpo no sprite, sem a arma, a partir dos pés (`GetPosition()`). O colisor de movimento continua sendo o raio nos pés.
+- Projéteis do jogador acertam o retângulo `GetHurtbox()` (base nos pés, centrado em x). Inimigos sem `body` (caverna e mansão) mantêm o círculo de `GetCollisionRadius` nos pés.
+- Os ataques saem de `GetHandAnchor()` e miram `EnemyUpdateContext::playerAimPoint` (centro do corpo do jogador; sem ele, `playerPosition`). O alcance de início é medido entre esses dois pontos. A perseguição continua indo até `playerPosition`.
+- O projétil leva `height = handHeight`: a parede corta osso pela sombra no chão (ver `colisao-de-salas.md`). Golpes que seguem o inimigo (estocada, giro) mantêm a altura das mãos enquanto ele anda.
 
 ## Máquina de estados do ataque
 Fases: `Ready` → `Charging` → `Active` → `Ready`.
@@ -51,7 +59,7 @@ Fases: `Ready` → `Charging` → `Active` → `Ready`.
 Sala normal concluída: em `main.cpp`, depois de remover os inimigos mortos, se o jogador está na sala, ela é do tipo Normal e a lista ficou vazia, a sala entra em `EnemyRules::ClearedRooms` (cada sala conta uma vez). O contador é zerado em `BeginNewRun` e passado a `EnemySpawner::SpawnEnemiesForRoom(room, storage, rng, normalRoomsCleared)`. Só afeta a Dungeon. Para remover: apagar a seção do escalonamento em `enemy_rules`, `ClearedRooms`, o parâmetro do spawner e as três linhas em `main.cpp`.
 
 ## Onde ajustar cada número
-- Atributos, ataque, carga, intervalo, bolsas, pesos e tamanho de frame: tabela em `enemy_rules.cpp` (`kDungeonEnemies`).
+- Atributos, ataque, carga, intervalo, bolsas, pesos, tamanho de frame e corpo (`body`): tabela em `enemy_rules.cpp` (`kDungeonEnemies`).
 - Contagem por área, mínimo, razão do teto, constantes do escalonamento: constantes no topo de `enemy_rules.cpp`.
 - Tempos de extensão da estocada: `kThrust*Seconds` em `enemy_rules.cpp` e `enemy_attacks.cpp` (mantê-los iguais).
 - Faixas de moedas por bolsa: `reward_pouch.cpp`.
@@ -59,8 +67,10 @@ Sala normal concluída: em `main.cpp`, depois de remover os inimigos mortos, se 
 ## Sprites
 `python tools/sprites/dungeon_enemies.py` (Pillow) regenera, de forma determinística, `game/assets/img/enemies/dungeon_{victim,guard,executioner}/` (`idle_sprite`, `walking_spritesheet` de 4 frames verticais, `charge_sprite` no Guard e no Executioner) e as imagens `bone.png`, `spear.png`, `axe.png`. Placeholders com potencial de ficar definitivos. Os sprites olham para a direita. As armas dos corpos (lança e machado) aparecem também nos projéteis durante o ataque.
 
-Os corpos são desenhados em pixel art e ampliados por `SPRITE_SCALE` (1,4, vizinho mais próximo): Victim 48×87, Guard 56×98, Executioner 81×123. Os projéteis (osso, lança, machado) não são ampliados. Ao mudar a escala, rode o script e atualize os tamanhos de quadro na tabela de `enemy_rules.cpp`; hitboxes e alcances são independentes do sprite. O cavaleiro segue a mesma escala em `tools/sprites/knight.py` (53×95, quadro em `player.cpp`).
+Os corpos são desenhados em pixel art e ampliados por `SPRITE_SCALE` (1,4, vizinho mais próximo): Victim 48×87, Guard 56×98, Executioner 81×123. Os projéteis (osso, lança, machado) não são ampliados. Ao mudar a escala, rode o script e atualize na tabela de `enemy_rules.cpp` os tamanhos de quadro e o `body` (corpo opaco sem a arma e altura das mãos, já escalados); alcances e colisor de movimento são independentes do sprite. O cavaleiro segue a mesma escala em `tools/sprites/knight.py` (53×95, quadro e `appearance.body` em `player.cpp`).
 
 ## Testes
-- `game/tests/enemy_rules_tests.cpp` (`mingw32-make test`): atributos da tabela, alcances e blueprints, moedas esperadas, contagem por área (todos os tamanhos pares 10..20), teto de Executioner em 2000 seeds, escalonamento, `ClearedRooms` e tempos de carga/intervalo da máquina de estados.
-- Validar jogando: legibilidade da carga do Guard (0,35 s) e do Executioner (0,8 s), osso do Victim em grupo, giro que anda, barra de vida sobre os sprites, e o aumento de dificuldade a partir da 7ª sala.
+- `game/tests/enemy_rules_tests.cpp` (`mingw32-make test`): atributos da tabela, alcances e blueprints, moedas esperadas, contagem por área (todos os tamanhos pares 10..20), teto de Executioner em 2000 seeds, escalonamento, `ClearedRooms`, tempos de carga/intervalo da máquina de estados e corpos dentro do quadro do sprite.
+- `game/tests/body_rules_tests.cpp`: geometria da área de dano, das mãos e do centro; corpo do cavaleiro.
+- `game/tests/projectile_lifetime_tests.cpp`: ataques reais dos três inimigos e osso do Victim saindo da altura das mãos.
+- Validar jogando: legibilidade da carga do Guard (0,35 s) e do Executioner (0,8 s), osso do Victim em grupo, giro que anda, barra de vida sobre os sprites, e o aumento de dificuldade a partir da 7ª sala. Osso, lança e machado saindo das mãos; tiros e golpes do jogador acertando cabeça e tronco.

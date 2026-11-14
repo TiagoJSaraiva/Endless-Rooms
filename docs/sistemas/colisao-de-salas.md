@@ -9,9 +9,9 @@ Ao contornar props, a navegação inimiga ajusta os pontos de cada tile à área
 Munição (flechas, ossos, balas) para na parede e lasers terminam nela, tanto os do jogador quanto os dos inimigos. Golpes corpo a corpo não são afetados.
 
 - Área livre = união dos pisos das salas (`Room::Layout().tileBounds`) com os corredores (`Doorway::corridorTiles`) de portas não seladas e abertas (`doorState->open`). Porta fechada bloqueia. Calculada por `RoomCollisionRules::ProjectilePassableAreas` e entregue a cada frame pelo `main.cpp` com `ProjectileSystem::SetPassableAreas` (lista vazia = sem limite, o padrão em testes).
-- O contato é pelo centro do projétil. Só há corte quando o trajeto sai da área partindo de dentro (`CombatGeometry::ExitFraction`); um projétil que já começa fora não é cortado, para não expirar tiros disparados encostados na parede.
+- O contato é pela sombra do projétil no chão: centro + (0, `ProjectileSpawnContext::height`). Ataques saem das mãos, acima do chão; sem a sombra, um tiro disparado junto à parede norte começaria fora do piso e atravessaria as paredes. O jogador usa como sombra a própria posição (centro do colisor) e os inimigos, os pés. Só há corte quando o trajeto sai da área partindo de dentro (`CombatGeometry::ExitFraction`); um projétil que já começa fora não é cortado, para não expirar tiros disparados encostados na parede.
 - Munição: ao sair, vai ao ponto de saída e entra no frame terminal, então acertos antes da parede ainda contam e ela expira no `Update` seguinte. Laser: o comprimento do feixe (desenho e dano) é limitado ao ponto de saída, recalculado a cada frame.
-- Testes: `projectile_wall_tests.cpp` (geometria, munição e laser) e `room_collision_rules_tests.cpp` (áreas livres).
+- Testes: `projectile_wall_tests.cpp` (geometria, munição, laser e sombra) e `room_collision_rules_tests.cpp` (áreas livres).
 
 ## Verificação manual
 
