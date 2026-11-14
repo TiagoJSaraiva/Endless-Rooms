@@ -3,6 +3,7 @@
 ## Onde paramos
 - Etapa 0 concluída: fluxo de agentes adaptado do `godot-template` (fluxos `/inicio` `/planejar` `/revisar` `/fim`, `scripts/check.ps1`, hook de toolchain, memória em `docs/`) e regra de commits pelo agente (decisão 0008).
 - Etapa 1 em andamento: 1.1 e 1.6 concluídas; 1.2 a 1.5 implementadas e aguardando validação jogando. Onda 1 (1.7, 1.8, 1.9a, 1.9b, 1.9c) implementada por subagentes, integrada na `main` com check completo passando; aguarda validação jogando.
+- Sprites do cavaleiro e dos inimigos ampliados em 1,4× (`SPRITE_SCALE` nos geradores de `tools/sprites/`); hitboxes inalteradas.
 - Jogo jogável: lobby, salas geradas por bioma, combate melee/ranged, props e tochas com iluminação, reward pouches, inventário, loja, forja e baú.
 
 ## Roadmap até a demo
@@ -58,7 +59,7 @@ Concluída: cada subtarefa foi implementada por um subagente em branch própria,
 - Retomar os biomas caverna e mansão.
 
 ## Próximo passo
-- Desenvolvedor: validar jogando 1.2 a 1.5 e a onda 1 (roteiros em `inimigos.md`, `armas.md`, `economia.md` e `balanceamento.md`), depois o playtest 1.9d; decidir se os pesos de salas sobem para 70/10/10/10 (folga na meta de loja visível).
+- Desenvolvedor: validar jogando 1.2 a 1.5 e a onda 1 (roteiros em `inimigos.md`, `armas.md`, `economia.md` e `balanceamento.md`), depois o playtest 1.9d; validar a escala 1,4× dos sprites e dizer se as hitboxes devem crescer junto; decidir se os pesos de salas sobem para 70/10/10/10 (folga na meta de loja visível).
 - Depois da validação: 1.10 (UI) com o desenvolvedor.
 
 ## Bloqueios

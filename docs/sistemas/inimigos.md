@@ -59,6 +59,8 @@ Sala normal concluída: em `main.cpp`, depois de remover os inimigos mortos, se 
 ## Sprites
 `python tools/sprites/dungeon_enemies.py` (Pillow) regenera, de forma determinística, `game/assets/img/enemies/dungeon_{victim,guard,executioner}/` (`idle_sprite`, `walking_spritesheet` de 4 frames verticais, `charge_sprite` no Guard e no Executioner) e as imagens `bone.png`, `spear.png`, `axe.png`. Placeholders com potencial de ficar definitivos. Os sprites olham para a direita. As armas dos corpos (lança e machado) aparecem também nos projéteis durante o ataque.
 
+Os corpos são desenhados em pixel art e ampliados por `SPRITE_SCALE` (1,4, vizinho mais próximo): Victim 48×87, Guard 56×98, Executioner 81×123. Os projéteis (osso, lança, machado) não são ampliados. Ao mudar a escala, rode o script e atualize os tamanhos de quadro na tabela de `enemy_rules.cpp`; hitboxes e alcances são independentes do sprite. O cavaleiro segue a mesma escala em `tools/sprites/knight.py` (53×95, quadro em `player.cpp`).
+
 ## Testes
 - `game/tests/enemy_rules_tests.cpp` (`mingw32-make test`): atributos da tabela, alcances e blueprints, moedas esperadas, contagem por área (todos os tamanhos pares 10..20), teto de Executioner em 2000 seeds, escalonamento, `ClearedRooms` e tempos de carga/intervalo da máquina de estados.
 - Validar jogando: legibilidade da carga do Guard (0,35 s) e do Executioner (0,8 s), osso do Victim em grupo, giro que anda, barra de vida sobre os sprites, e o aumento de dificuldade a partir da 7ª sala.
