@@ -41,10 +41,10 @@ void DeterminismAndFit() {
     assert(!props.empty());
     for (std::size_t i = 0; i < props.size(); ++i) {
         const auto& prop = props[i];
+        if (prop.key.section == WallRules::Section::Side) continue; // SideTorches
         const auto bounds = prop.Bounds();
         assert(bounds.width == 128 && bounds.height == 128);
         assert(prop.module.widthTiles == 2);
-        assert(prop.key.section != WallRules::Section::Side);
         assert(prop.Depth() == (prop.key.section == WallRules::Section::Upper ? 0 : 8 * TILE_SIZE));
         for (std::size_t j = i + 1; j < props.size(); ++j)
             if (prop.key.section == props[j].key.section)
@@ -52,9 +52,12 @@ void DeterminismAndFit() {
     }
     auto odd = MakeRoom({}, {0, 0, 9, 8});
     for (const auto& prop : WallPropRules::Generate({{&odd, 1}}, 1, GetWallPropDefinitions(), {1, 0}))
-        assert(prop.key.position.x + prop.definition->widthTiles <= 8); // Unpaired last tile excluded.
+        if (prop.key.section != WallRules::Section::Side)
+            assert(prop.key.position.x + prop.definition->widthTiles <= 8); // Unpaired last tile excluded.
     auto narrow = MakeRoom({}, {0, 0, 1, 8});
-    assert(WallPropRules::Generate({{&narrow, 1}}, 1, GetWallPropDefinitions(), {1, 0}).empty());
+    // Estreita demais para módulos de 2 tiles em cima e embaixo; só as laterais cabem.
+    for (const auto& prop : WallPropRules::Generate({{&narrow, 1}}, 1, GetWallPropDefinitions(), {1, 0}))
+        assert(prop.key.section == WallRules::Section::Side);
     assert(WallPropRules::Generate({{&room, 1}}, 1, GetWallPropDefinitions(), {0, 0}).empty());
     assert(WallPropRules::Generate({{&room, 1}}, 1, {}).empty());
     auto cave = MakeRoom({}, {0, 0, 12, 8}, RoomType::Normal, BiomeType::Cave);
@@ -136,6 +139,58 @@ void ExtensibleCatalog() {
         assert(!prop.definition->animation && !prop.definition->light);
     }
 }
+// Tochas laterais: paredes oeste (arte original) e leste (espelhada), encostadas por dentro.
+void SideTorches() {
+    auto room = MakeRoom({}, {0, 0, 12, 8});
+    const auto props = WallPropRules::Generate({{&room, 1}}, 7, GetWallPropDefinitions(), {1, 0, 1});
+    int west = 0, east = 0;
+    for (const auto& prop : props) {
+        if (prop.key.section != WallRules::Section::Side) continue;
+        assert(prop.definition->id == "side-torch");
+        assert(prop.module.heightTiles == 2);
+        const auto bounds = prop.Bounds();
+        assert(bounds.width == 30 && bounds.height == 83);
+        // Centralizada na altura do módulo e dentro da sala.
+        const float moduleTop = float(prop.module.segment.position.y * TILE_SIZE);
+        assert(std::abs(bounds.y - (moduleTop + (2 * TILE_SIZE - 83) * 0.5f)) < 0.001f);
+        assert(bounds.y >= 0 && bounds.y + bounds.height <= 8 * TILE_SIZE);
+        assert(prop.Depth() == bounds.y + bounds.height);
+        if (prop.key.position.x < 0) {
+            ++west; assert(!prop.FlipX() && bounds.x == 0);
+        } else {
+            ++east; assert(prop.FlipX() && bounds.x + bounds.width == 12 * TILE_SIZE);
+        }
+    }
+    // 8 tiles de altura = 4 módulos por parede; o de baixo encosta na parede inferior, que o cobriria.
+    // Com chance 1 e fator 1, os outros 3 recebem tocha.
+    assert(west == 3 && east == 3);
+
+    // Vizinhança vale na vertical: com fator 0, nunca há duas encostadas na mesma coluna.
+    for (const auto& prop : WallPropRules::Generate({{&room, 1}}, 7, GetWallPropDefinitions(), {1, 0, 0}))
+        for (const auto& other : WallPropRules::Generate({{&room, 1}}, 7, GetWallPropDefinitions(), {1, 0, 0}))
+            if (prop.key.section == WallRules::Section::Side && other.key.section == prop.key.section)
+                assert(other.key.position.x != prop.key.position.x || other.key.position.y != prop.key.position.y + 2);
+
+    // Salas especiais seguem sem laterais.
+    auto shop = MakeRoom({}, {0, 0, 8, 8}, RoomType::Shop);
+    for (const auto& prop : WallPropRules::Generate({{&shop, 1}}, 7, GetWallPropDefinitions(), {1, 0, 1}))
+        assert(prop.key.section != WallRules::Section::Side);
+
+    // Corredor vertical entre duas salas recebe laterais.
+    auto lower = MakeRoom({}, {0, 0, 12, 8});
+    auto upper = MakeRoom({0, -1}, {0, -12, 12, 8});
+    Doorway north; north.direction = Direction::North; north.offset = 4; north.width = 2;
+    north.corridorTiles = {4, -4, 2, 4}; north.targetCoords = upper.GetCoords();
+    north.doorState = std::make_shared<DoorInstance>(); north.doorState->open = true;
+    Doorway south = north; south.direction = Direction::South; south.targetCoords = lower.GetCoords();
+    lower.Layout().doors.push_back(north); upper.Layout().doors.push_back(south);
+    int corridorSides = 0;
+    for (const auto& prop : WallPropRules::Generate({{&lower, 1}, {&upper, 1}}, 7, GetWallPropDefinitions(), {1, 0, 1}))
+        if (prop.key.host.kind == WallRules::HostKind::Corridor && prop.key.section == WallRules::Section::Side)
+            ++corridorSides;
+    assert(corridorSides > 0);
+}
+
 // Tochas sorteadas em salas normais grandes: quantidade e pares encostados na mesma parede.
 struct TorchStats { int torches{0}; int adjacentPairs{0}; };
 
@@ -168,6 +223,6 @@ void DensityAndAdjacency() {
 }
 
 int main() {
-    DeterminismAndFit(); SpecialDoors(); SharedCorridorsAndReveal(); ExtensibleCatalog(); DensityAndAdjacency();
+    DeterminismAndFit(); SpecialDoors(); SharedCorridorsAndReveal(); ExtensibleCatalog(); DensityAndAdjacency(); SideTorches();
     std::cout << "Wall prop rules tests passed\n";
 }

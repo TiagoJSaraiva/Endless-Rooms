@@ -26,11 +26,12 @@ public:
     // Shared by floor and wall props; bounds supplies horizontal fit and bottom anchor.
     static PropSpriteGeometry SpriteGeometry(Rectangle bounds, const std::optional<PropAnimation>& animation,
                                              int width, int height, float elapsedSeconds);
+    // flipX espelha o quadro na horizontal (e a posição da luz junto), sem mudar bounds.
     void DrawSprite(const std::string& path, Rectangle bounds, const std::optional<PropAnimation>& animation,
-                    float visibility, float elapsedSeconds);
+                    float visibility, float elapsedSeconds, bool flipX = false);
     Vector2 SpriteLightPosition(const std::string& path, Rectangle bounds,
                                 const std::optional<PropAnimation>& animation, const PropLight& light,
-                                float elapsedSeconds);
+                                float elapsedSeconds, bool flipX = false);
     void Unload();
 private:
     Texture2D Acquire(const std::string& path);

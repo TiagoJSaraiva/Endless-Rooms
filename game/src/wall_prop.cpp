@@ -32,14 +32,34 @@ bool Supports(const WallPropDefinition& definition, const WallRules::Module& mod
 }
 
 // Verdadeiro se o módulo encosta numa prop já colocada na mesma linha de parede do mesmo anfitrião.
-bool TouchesPlaced(const std::vector<WallPropInstance>& placed, const WallPropKey& key, int widthTiles) {
+// Paredes laterais encostam na vertical: módulos da mesma coluna, um logo acima do outro.
+bool TouchesPlaced(const std::vector<WallPropInstance>& placed, const WallPropKey& key, const WallRules::Module& module) {
     for (const auto& prop : placed) {
-        if (!(prop.key.host == key.host) || prop.key.section != key.section ||
-            prop.key.position.y != key.position.y) continue;
+        if (!(prop.key.host == key.host) || prop.key.section != key.section) continue;
+        if (key.section == WallRules::Section::Side) {
+            if (prop.key.position.x != key.position.x) continue;
+            if (prop.key.position.y + prop.module.heightTiles == key.position.y ||
+                key.position.y + module.heightTiles == prop.key.position.y) return true;
+            continue;
+        }
+        if (prop.key.position.y != key.position.y) continue;
         if (prop.key.position.x + prop.definition->widthTiles == key.position.x ||
-            key.position.x + widthTiles == prop.key.position.x) return true;
+            key.position.x + module.widthTiles == prop.key.position.x) return true;
     }
     return false;
+}
+
+// Só faixas laterais comuns de dois tiles recebem props; cantos e acabamentos de corredor ficam livres.
+// A faixa que desce até um piso com parede inferior também fica livre: essa parede é desenhada
+// por cima da última fileira do piso e esconderia a prop.
+bool RegularSidePair(const WallRules::Module& module, const WallRules::Frame& frame) {
+    const auto& segment = module.segment;
+    if (segment.sidePlacement != WallRules::SidePlacement::Edge || segment.position.y != segment.edgeTile.y ||
+        module.heightTiles != 2) return false;
+    const auto lower = frame.find({{segment.position.x, segment.position.y + 1}, WallRules::Section::Side});
+    if (lower == frame.end() || lower->second.edgeTile.y != segment.edgeTile.y + 1 ||
+        lower->second.edgeTile.x != segment.edgeTile.x) return false;
+    return frame.find({lower->second.edgeTile, WallRules::Section::Bottom}) == frame.end();
 }
 
 bool DoorNeighbor(const WallRules::Module& module, const Room& room) {
@@ -60,8 +80,17 @@ bool DoorNeighbor(const WallRules::Module& module, const Room& room) {
 
 Rectangle WallPropInstance::Bounds() const {
     Rectangle bounds = WallRules::ModuleBounds(module);
+    if (key.section == WallRules::Section::Side) {
+        const Vector2 size = definition->sideSize;
+        const float x = FlipX() ? bounds.x - size.x : bounds.x + bounds.width;
+        return {x, bounds.y + (bounds.height - size.y) * 0.5f, size.x, size.y};
+    }
     bounds.width = static_cast<float>(definition->widthTiles * TILE_SIZE);
     return bounds;
+}
+
+bool WallPropInstance::FlipX() const {
+    return key.section == WallRules::Section::Side && module.segment.position.x > module.segment.edgeTile.x;
 }
 
 float WallPropInstance::Depth() const {
@@ -82,7 +111,17 @@ const std::vector<WallPropDefinition>& GetWallPropDefinitions() {
         torch.texturePath = "assets/img/wallprop/torch.png";
         torch.animation = PropAnimation{995, 957, 8, 0.10f, false};
         torch.light = PropLight{320.0f, 0.65f, {255, 210, 140, 255}, {0.50f, 0.36f}};
-        return std::vector<WallPropDefinition>{torch};
+
+        // Tocha das paredes laterais: 8 quadros de 30x83 px, desenhada no tamanho nativo.
+        WallPropDefinition sideTorch;
+        sideTorch.id = "side-torch";
+        sideTorch.texturePath = "assets/img/sidewallprop/torch.png";
+        sideTorch.widthTiles = 1;
+        sideTorch.sections = {WallRules::Section::Side};
+        sideTorch.animation = PropAnimation{30, 83, 8, 0.10f, false};
+        sideTorch.light = PropLight{320.0f, 0.65f, {255, 210, 140, 255}, {0.62f, 0.40f}};
+        sideTorch.sideSize = Vector2{30.0f, 83.0f};
+        return std::vector<WallPropDefinition>{torch, sideTorch};
     }();
     return catalog;
 }
@@ -105,12 +144,15 @@ std::vector<WallPropInstance> Generate(const std::vector<WallRules::RoomView>& r
     std::vector<WallPropInstance> result;
     for (const auto& module : modules) {
         const auto& segment = module.segment;
-        if (segment.section == WallRules::Section::Side || segment.host.kind == WallRules::HostKind::None) continue;
+        const bool side = segment.section == WallRules::Section::Side;
+        if (segment.host.kind == WallRules::HostKind::None || (side && !RegularSidePair(module, frame))) continue;
         // A module can straddle two compatible wall styles; props must stay on one host.
         bool sameHost = true;
-        for (int dx = 0; dx < module.widthTiles; ++dx) {
-            const auto part = frame.find({{segment.position.x + dx, segment.position.y}, segment.section});
-            if (part == frame.end() || !(part->second.host == segment.host)) sameHost = false;
+        const int span = side ? module.heightTiles : module.widthTiles;
+        for (int d = 0; d < span; ++d) {
+            const WallRules::Position part{segment.position.x + (side ? 0 : d), segment.position.y + (side ? d : 0)};
+            const auto found = frame.find({part, segment.section});
+            if (found == frame.end() || !(found->second.host == segment.host)) sameHost = false;
         }
         if (!sameHost) continue;
 
@@ -128,7 +170,7 @@ std::vector<WallPropInstance> Generate(const std::vector<WallRules::RoomView>& r
         WallPropKey key{segment.host, segment.section, segment.position};
         std::mt19937_64 rng(PlacementSeed(seed, key));
         float chance = std::clamp(settings.occupancyChance, 0.0f, 1.0f);
-        if (TouchesPlaced(result, key, module.widthTiles)) chance *= std::clamp(settings.adjacentChanceFactor, 0.0f, 1.0f);
+        if (TouchesPlaced(result, key, module)) chance *= std::clamp(settings.adjacentChanceFactor, 0.0f, 1.0f);
         if (!guaranteed && std::generate_canonical<double, 53>(rng) >= chance) continue;
         std::vector<const WallPropDefinition*> choices;
         std::vector<double> weights;
@@ -139,9 +181,16 @@ std::vector<WallPropInstance> Generate(const std::vector<WallRules::RoomView>& r
         const auto* definition = choices[std::discrete_distribution<std::size_t>(weights.begin(), weights.end())(rng)];
         bool blocked = false;
         for (const auto& placed : result) {
-            if (!(placed.key.host == key.host) || placed.key.section != key.section ||
-                placed.key.position.y != key.position.y) continue;
+            if (!(placed.key.host == key.host) || placed.key.section != key.section) continue;
             const int gap = guaranteed ? 0 : std::max(0, settings.gapTiles);
+            if (side) {
+                // Na lateral, o espaçamento é contado na coluna.
+                if (placed.key.position.x == key.position.x &&
+                    key.position.y < placed.key.position.y + placed.module.heightTiles + gap &&
+                    key.position.y + module.heightTiles + gap > placed.key.position.y) blocked = true;
+                continue;
+            }
+            if (placed.key.position.y != key.position.y) continue;
             if (key.position.x < placed.key.position.x + placed.definition->widthTiles + gap &&
                 key.position.x + definition->widthTiles + gap > placed.key.position.x) blocked = true;
         }
@@ -174,8 +223,11 @@ std::vector<WallPropView> VisibleInstances(const std::vector<WallPropInstance>& 
     std::vector<WallPropView> result;
     for (const auto& prop : props) {
         float visibility = 1.0f;
-        for (int dx = 0; dx < prop.module.widthTiles; ++dx) {
-            const auto part = frame.find({{prop.key.position.x + dx, prop.key.position.y}, prop.key.section});
+        const bool side = prop.key.section == WallRules::Section::Side;
+        const int span = side ? prop.module.heightTiles : prop.module.widthTiles;
+        for (int d = 0; d < span; ++d) {
+            const WallRules::Position tile{prop.key.position.x + (side ? 0 : d), prop.key.position.y + (side ? d : 0)};
+            const auto part = frame.find({tile, prop.key.section});
             if (part == frame.end() || !(part->second.host == prop.key.host)) { visibility = 0; break; }
             visibility = std::min(visibility, part->second.visibility);
         }

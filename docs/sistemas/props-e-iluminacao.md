@@ -110,7 +110,8 @@ de chão e de suas identidades de combate. `WallPropDefinition` configura
 identificador, caminho do PNG, largura em tiles, seções, biomas, peso e,
 opcionalmente, `PropAnimation` e `PropLight`. O catálogo precisa viver por
 toda a partida. Acrescentar uma decoração estática ou sem luz exige apenas
-uma nova definição; seções `Side` ainda não são suportadas pela geração.
+uma nova definição. Props da seção `Side` usam `sideSize` (tamanho na tela,
+em pixels) em vez da largura do módulo.
 
 `WallPropInstance` referencia um módulo real de `WallRules`. O frame inteiro,
 incluindo margens transparentes, é escalado para a largura declarada; sua
@@ -122,11 +123,18 @@ com as props de chão; os caminhos completos identificam as texturas no cache.
 | Identificador | Encaixe | Animação | Luz |
 |---|---|---|---|
 | `torch` | 2 tiles / 128 px | 8 frames horizontais de 995×957 px; 0,10 s/frame | Raio 320 px; intensidade 0,65; RGB `(255, 210, 140)` |
+| `side-torch` | Lateral, 30×83 px (tamanho nativo) | 8 frames horizontais de 30×83 px; 0,10 s/frame | Igual à `torch`; origem `(0,62; 0,40)` |
 
 O PNG fica em `assets/img/wallprop/torch.png` e é preservado sem recorte.
 A origem da luz é `(0,50; 0,36)` dentro do frame. A fase da animação deriva
 da identidade da instância. Tochas não recebem ataques, não bloqueiam
 movimento e não causam dano nem oferecem interação.
+
+A tocha lateral (`assets/img/sidewallprop/torch.png`) fica encostada na face
+interna da parede leste ou oeste, centralizada na altura do módulo de 2
+tiles. A arte olha para a direita (presa à parede oeste); na parede leste,
+`WallPropInstance::FlipX()` espelha o quadro e a origem da luz
+(`PropRenderer::DrawSprite`/`SpriteLightPosition` com `flipX`).
 
 ### Geração e ciclo de vida
 
@@ -139,9 +147,15 @@ movimento e não causam dano nem oferecem interação.
   imediatamente à esquerda e à direita de cada porta north/south não selada.
   Um lado sem espaço é omitido, módulos compartilhados não duplicam props,
   e o espaçamento aleatório não impede as colocações garantidas.
+- Paredes laterais de salas normais e de corredores recebem tochas laterais
+  com a mesma chance e a mesma regra de vizinhança, contada na coluna.
+  Só faixas laterais comuns de 2 tiles são elegíveis: cantos, acabamentos
+  nas bocas de corredor e a faixa que desce até a última fileira do piso
+  (coberta pela parede inferior) ficam livres. Salas especiais não recebem
+  tochas laterais.
 - Corredores usam o bioma resolvido por `FloorRules::CorridorBiome` e recebem
-  tochas somente quando ele for Dungeon. Trechos upper/bottom são elegíveis;
-  corredores verticais com apenas paredes side ficam sem tochas.
+  tochas somente quando ele for Dungeon. Trechos upper/bottom e paredes
+  laterais de corredores verticais são elegíveis.
 - Vãos, módulos residuais de 1 tile e módulos que cruzam anfitriões são
   excluídos. Lobby não recebe essas props.
 
@@ -168,7 +182,8 @@ do registro.
 
 Upper props são desenhadas depois das paredes de fundo e antes dos atores.
 Bottom props participam da ordenação dos atores pela base do módulo e são
-cobertas pelo passe de paredes frontais. A bottom continua transitando de
+cobertas pelo passe de paredes frontais. Tochas laterais também entram na
+ordenação dos atores, pela base do próprio sprite. A bottom continua transitando de
 100% para 60% de opacidade em 0,2 s quando encobre o jogador. A tocha mantém
 sua própria opacidade: é vista através da parede translúcida, sem um segundo
 fade. O estado de oclusão não participa da emissão de luz.
@@ -243,5 +258,10 @@ Verificação manual em `game.exe`, iniciado de `game/`:
 8. Conferir pares de tochas junto às portas north/south de salas especiais
    quando houver espaço. Portas east/west não garantem tochas nessas salas.
    Abrir corredores horizontais e conferir aparecimento gradual, luz e
-   ausência de duplicação ao atravessar e retornar. Corredores verticais
-   não recebem tochas em suas paredes laterais.
+   ausência de duplicação ao atravessar e retornar.
+9. Conferir tochas laterais nas paredes leste e oeste de salas normais e de
+   corredores verticais: suporte encostado na parede, chama voltada para
+   dentro, tamanho coerente com a tocha de cima, luz na sala certa e
+   ordenação ao passar na frente e atrás delas. A prévia
+   `game/obj/side-torch-preview.png` (gerada por `test-wall-prop-render`)
+   mostra o encaixe com os sprites reais.

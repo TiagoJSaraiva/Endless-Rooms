@@ -279,11 +279,64 @@ void Preview() {
 }
 }
 
+// Tocha lateral da parede leste: o quadro e a luz são espelhados, sem mudar os bounds.
+void FlippedSideSprite() {
+    TemporaryAssets assets;
+    Image half = GenImageColor(30, 83, RED);
+    ImageDrawRectangle(&half, 15, 0, 15, 83, GREEN);
+    assert(ExportImage(half, "assets/img/wallprop/half.png")); UnloadImage(half);
+    PropRenderer renderer;
+    const Rectangle bounds{100, 100, 30, 83};
+    auto draw = [&](bool flip) {
+        BeginTextureMode(target); ClearBackground(BLACK);
+        renderer.DrawSprite("assets/img/wallprop/half.png", bounds, std::nullopt, 1.0f, 0.0f, flip);
+        return Capture();
+    };
+    Image normal = draw(false), mirrored = draw(true);
+    Expect(GetImageColor(normal, 105, 140), RED); Expect(GetImageColor(normal, 125, 140), GREEN);
+    Expect(GetImageColor(mirrored, 105, 140), GREEN); Expect(GetImageColor(mirrored, 125, 140), RED);
+    UnloadImage(normal); UnloadImage(mirrored);
+
+    const PropLight light{320.0f, 0.65f, WHITE, {0.62f, 0.40f}};
+    const Vector2 lit = renderer.SpriteLightPosition("assets/img/wallprop/half.png", bounds, std::nullopt, light, 0.0f);
+    const Vector2 flipped = renderer.SpriteLightPosition("assets/img/wallprop/half.png", bounds, std::nullopt, light, 0.0f, true);
+    assert(std::abs(lit.x - (100 + 30 * 0.62f)) < 0.01f && std::abs(flipped.x - (100 + 30 * 0.38f)) < 0.01f);
+    assert(std::abs(lit.y - flipped.y) < 0.01f);
+    renderer.Unload();
+}
+
+// Prévia com os sprites reais das tochas laterais numa sala normal, com paredes e luz.
+void SideTorchPreview() {
+    PropRenderer renderer; SceneLighting lighting; WallTiles walls;
+    walls.BeginRun(17);
+    auto room = MakeRoom({}, {1, 1, 6, 4});
+    const std::vector<WallRules::RoomView> rooms{{&room, 1}};
+    // As views apontam para as instâncias: o vetor gerado precisa viver até o fim da prévia.
+    const auto generated = WallPropRules::Generate(rooms, 17, GetWallPropDefinitions(), {1, 0, 1});
+    const auto props = WallPropRules::VisibleInstances(generated, rooms);
+    std::vector<FloorRoomView> floors{{&room, 1}};
+    Camera2D camera{}; camera.zoom = 1; camera.offset = {0, 0}; camera.target = {0, 0};
+    BeginTextureMode(target); ClearBackground({24, 26, 33, 255});
+    BeginMode2D(camera);
+    for (int y = 1; y < 5; ++y) for (int x = 1; x < 7; ++x) DrawRectangle(x * 64, y * 64, 63, 63, {75, 75, 70, 255});
+    walls.DrawBackground(rooms);
+    for (const auto& view : props) WallPropRendering::Draw(view, renderer, 0.23f);
+    walls.DrawForeground(rooms, Rectangle{2000, 2000, 24, 24}, 0.2f);
+    EndMode2D();
+    lighting.Apply(LightingRules::AmbientLevel(BiomeType::Dungeon), floors, camera, renderer, 0.23f, &target,
+                   WallPropRendering::Lights(props, renderer, 0.23f));
+    Image image = Capture();
+    ImageCrop(&image, {0, 0, 512, 384});
+    fs::create_directories("obj");
+    assert(ExportImage(image, "obj/side-torch-preview.png")); UnloadImage(image);
+    lighting.Unload(); renderer.Unload();
+}
+
 int main() {
     SetTraceLogLevel(LOG_WARNING); SetConfigFlags(FLAG_WINDOW_HIDDEN);
     InitWindow(1024, 768, "Wall prop render tests");
     assert(IsWindowReady()); target = LoadRenderTexture(1024, 768);
-    SpritesAndOcclusion(); Lighting(); RealAssetOcclusion(); Preview();
+    SpritesAndOcclusion(); Lighting(); RealAssetOcclusion(); FlippedSideSprite(); Preview(); SideTorchPreview();
     UnloadRenderTexture(target); CloseWindow();
     std::cout << "Wall prop render tests passed\n";
 }

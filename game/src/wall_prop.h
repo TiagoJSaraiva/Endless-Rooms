@@ -12,6 +12,9 @@ struct WallPropDefinition {
     float weight{1.0f};
     std::optional<PropAnimation> animation;
     std::optional<PropLight> light;
+    // Só para a seção Side: tamanho do quadro na tela, em pixels. A arte olha para a direita
+    // (presa à parede oeste) e é espelhada na parede leste.
+    Vector2 sideSize{0.0f, 0.0f};
 };
 
 struct WallPropKey {
@@ -28,9 +31,13 @@ struct WallPropInstance {
     const WallPropDefinition* definition{nullptr}; // Catalog must outlive the registry.
     WallRules::Module module{};
     float animationPhase{0.0f};
+    // Upper/Bottom: módulo inteiro. Side: sideSize encostado na face interna da parede,
+    // centralizado na altura do módulo.
     Rectangle Bounds() const;
     float Depth() const;
     Rectangle LightClip() const;
+    // Verdadeiro na parede leste: o sprite lateral é espelhado para apontar para dentro da sala.
+    bool FlipX() const;
 };
 
 struct WallPropView {

@@ -2192,8 +2192,9 @@ int main() {
 
         drawDoors(false, false);
         std::vector<SceneActor> actors;
+        // Tochas laterais saem da parede para dentro do piso: ordenadas com os atores, como as de baixo.
         for (const auto& view : wallPropViews)
-            if (view.prop->key.section == WallRules::Section::Bottom)
+            if (view.prop->key.section == WallRules::Section::Bottom || view.prop->key.section == WallRules::Section::Side)
                 actors.push_back({view.prop->Depth(), [&, view] {
                     WallPropRendering::Draw(view, propRenderer, propAnimationTime);
                 }});

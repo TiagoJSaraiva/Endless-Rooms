@@ -50,7 +50,7 @@ void PropRenderer::Draw(const PropInstance& p,float visibility,float time) {
 }
 
 void PropRenderer::DrawSprite(const std::string& path, Rectangle bounds,
-                              const std::optional<PropAnimation>& animation, float visibility, float time) {
+                              const std::optional<PropAnimation>& animation, float visibility, float time, bool flipX) {
     if(visibility<=0) return;
     Texture2D texture=Acquire(path);
     if(!texture.id) {
@@ -58,6 +58,7 @@ void PropRenderer::DrawSprite(const std::string& path, Rectangle bounds,
         return;
     }
     auto g=SpriteGeometry(bounds,animation,texture.width,texture.height,time);
+    if(flipX) g.source.width=-g.source.width; // largura negativa: raylib espelha o recorte
     DrawTexturePro(texture,g.source,g.destination,{0,0},0,Fade(WHITE,visibility));
 }
 
@@ -68,10 +69,11 @@ Vector2 PropRenderer::LightPosition(const PropInstance& p,float time) {
 
 Vector2 PropRenderer::SpriteLightPosition(const std::string& path, Rectangle bounds,
                                          const std::optional<PropAnimation>& animation, const PropLight& light,
-                                         float time) {
+                                         float time, bool flipX) {
     Texture2D texture=Acquire(path);
     auto g=SpriteGeometry(bounds,animation,texture.width>0?texture.width:64,texture.height>0?texture.height:64,time);
     Vector2 offset=light.spritePosition;
+    if(flipX) offset.x=1.0f-offset.x;
     return {g.destination.x+g.destination.width*offset.x,g.destination.y+g.destination.height*offset.y};
 }
 
