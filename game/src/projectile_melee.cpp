@@ -9,7 +9,7 @@
 using namespace projectile_detail;
 
 namespace {
-// Deslocamento entre a origem do golpe (as m„os) e a posiÁ„o do dono, mantido enquanto ele anda.
+// Deslocamento entre a origem do golpe (as m√£os) e a posi√ß√£o do dono, mantido enquanto ele anda.
 Vector2 OffsetFromOwner(Vector2 origin, const Vector2* followTarget) {
     return (followTarget != nullptr) ? Vector2Subtract(origin, *followTarget) : Vector2{0.0f, 0.0f};
 }

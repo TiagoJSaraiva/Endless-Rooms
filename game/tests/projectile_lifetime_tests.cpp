@@ -106,7 +106,7 @@ void CheckFollowingFamilies() {
     }
 }
 
-// Golpes saem das mãos, acima da posição do dono: ao segui-lo, mantêm essa altura.
+// Golpes saem das mÃ£os, acima da posiÃ§Ã£o do dono: ao segui-lo, mantÃªm essa altura.
 void CheckFollowingFamiliesKeepOriginOffset() {
     constexpr float kHandHeight = 60.0f;
     for (int family : {0, 1, 2, 3, 5}) {
