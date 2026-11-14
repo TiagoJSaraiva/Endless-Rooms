@@ -274,6 +274,7 @@ void ProjectileSystem::SpawnProjectile(const ProjectileBlueprint& blueprint, con
         return;
     }
 
+    const std::size_t firstSpawned = projectiles_.size();
     auto appendFollowing = [&](std::unique_ptr<ProjectileInstance> projectile, const Vector2* followTarget) {
         if (followTarget) projectile->ownerLifetime = context.ownerLifetime;
         projectiles_.push_back(std::move(projectile));
@@ -488,6 +489,10 @@ void ProjectileSystem::SpawnProjectile(const ProjectileBlueprint& blueprint, con
     }
 
     (void)accumulatedDelay;
+
+    for (std::size_t i = firstSpawned; i < projectiles_.size(); ++i) {
+        projectiles_[i]->shadowHeight = std::max(0.0f, context.height);
+    }
 }
 
 std::vector<ProjectileSystem::DamageEvent> ProjectileSystem::CollectDamageEvents(const Vector2& targetCenter,

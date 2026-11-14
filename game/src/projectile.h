@@ -144,6 +144,10 @@ struct ProjectileSpawnContext {
     Vector2 origin{};
     const Vector2* followTarget{nullptr};
     Vector2 aimDirection{1.0f, 0.0f};
+    // Altura da origem acima do chão (as mãos do atirador). A parede corta munição e laser
+    // pela sombra no chão, (x, y + height), para que um tiro saído das mãos junto à parede
+    // norte não comece fora do piso e atravesse as paredes.
+    float height{0.0f};
     // Dynamic owners must supply a lifetime marker. An absent marker is only safe
     // when followTarget remains valid until all of its following attacks are cleared.
     std::optional<std::weak_ptr<const void>> ownerLifetime;

@@ -146,7 +146,8 @@ public:
 
     void ClipToPassable(const std::vector<Rectangle>& areas) override {
         if (terminalFrame_) return;
-        auto exit = CombatGeometry::ExitFraction(previousPosition_, position_, areas);
+        const Vector2 shadow{0.0f, shadowHeight};
+        auto exit = CombatGeometry::ExitFraction(Vector2Add(previousPosition_, shadow), Vector2Add(position_, shadow), areas);
         if (!exit) return;
         // Para na parede, mas mantém o frame para que acertos antes dela ainda contem.
         position_ = Vector2Add(previousPosition_, Vector2Scale(Vector2Subtract(position_, previousPosition_), *exit));
@@ -344,7 +345,8 @@ private:
     void ComputeBeamSegment(Vector2& outStart, Vector2& outEnd) const {
         outStart = Vector2Add(origin_, startOffset_);
         outEnd = Vector2Add(outStart, Vector2Scale(direction_, params_.length));
-        if (auto exit = CombatGeometry::ExitFraction(outStart, outEnd, passableAreas_)) {
+        const Vector2 shadow{0.0f, shadowHeight};
+        if (auto exit = CombatGeometry::ExitFraction(Vector2Add(outStart, shadow), Vector2Add(outEnd, shadow), passableAreas_)) {
             outEnd = Vector2Add(outStart, Vector2Scale(Vector2Subtract(outEnd, outStart), *exit));
         }
     }

@@ -123,12 +123,43 @@ void CheckLaser() {
     assert(HitsAt(unlimited, {350, 0}) == 1);
 }
 
+// Tiro saído das mãos (40 px acima dos pés) com o atirador encostado na parede norte (y=-100):
+// as mãos ficam fora do piso, mas a sombra não, então a parede ainda corta.
+void CheckShadowHeight() {
+    constexpr float kHandHeight = 40.0f;
+    const Vector2 hands{100.0f, -130.0f};
+
+    ProjectileSpawnContext north{hands, nullptr, {0, -1}};
+    north.height = kHandHeight;
+    ProjectileSystem ammoNorth;
+    ammoNorth.SetPassableAreas({kRoom});
+    ammoNorth.SpawnProjectile(Ammo(), north);
+    ammoNorth.Update(0.4f);
+    assert(HitsAt(ammoNorth, {100, -200}) == 0);
+
+    ProjectileSpawnContext south{hands, nullptr, {0, 1}};
+    south.height = kHandHeight;
+    ProjectileSystem ammoSouth;
+    ammoSouth.SetPassableAreas({kRoom});
+    ammoSouth.SpawnProjectile(Ammo(), south);
+    ammoSouth.Update(0.4f);  // sombra sai em y=100, então o tiro para em y=60
+    assert(HitsAt(ammoSouth, {100, 0}) == 1);
+    assert(HitsAt(ammoSouth, {100, 90}) == 0);
+
+    ProjectileSystem laserNorth;
+    laserNorth.SetPassableAreas({kRoom});
+    laserNorth.SpawnProjectile(Laser(), north);
+    laserNorth.Update(0.1f);
+    assert(HitsAt(laserNorth, {100, -200}) == 0);
+}
+
 } // namespace
 
 int main() {
     CheckExitFraction();
     CheckAmmunition();
     CheckLaser();
+    CheckShadowHeight();
     std::cout << "Projectile wall tests passed\n";
     return 0;
 }

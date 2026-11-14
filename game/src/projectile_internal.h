@@ -7,6 +7,8 @@
 struct ProjectileSystem::ProjectileInstance {
     std::optional<std::weak_ptr<const void>> ownerLifetime;
     bool HasExpiredOwner() const { return ownerLifetime && ownerLifetime->expired(); }
+    // Distância vertical entre o projétil e sua sombra no chão (ver ProjectileSpawnContext::height).
+    float shadowHeight{0.0f};
     virtual ~ProjectileInstance() = default;
     virtual void Update(float deltaSeconds) = 0;
     virtual void Draw() const = 0;
