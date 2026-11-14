@@ -22,6 +22,18 @@ bool IsFree(const Room& room, Rectangle bounds) {
 }
 
 namespace {
+// Distância em tiles, de centro a centro, até a instância mais próxima do mesmo prop; vazio se não há.
+std::optional<float> NearestSameProp(const Room& room, const PropDefinition& def, TileRect c) {
+    std::optional<float> nearest;
+    for(const auto& p:room.Props()) {
+        if(p.destroyed||p.definition!=&def) continue;
+        float dx=(p.tiles.x+p.tiles.width*0.5f)-(c.x+c.width*0.5f);
+        float dy=(p.tiles.y+p.tiles.height*0.5f)-(c.y+c.height*0.5f);
+        float d=std::hypot(dx,dy);
+        if(!nearest||d<*nearest) nearest=d;
+    }
+    return nearest;
+}
 bool Inside(TileRect a, TileRect b) {
     return a.width > 0 && a.height > 0 && a.x >= b.x && a.y >= b.y &&
            a.x+a.width <= b.x+b.width && a.y+a.height <= b.y+b.height;
@@ -120,7 +132,10 @@ void Initialize(Room& room, const std::vector<PropDefinition>& catalog) {
                     float maxDistance=std::max(1.0f,std::min((b.width-c.width)*0.5f,(b.height-c.height)*0.5f));
                     float proximity=std::min(dx,dy)/maxDistance;
                     float difference=proximity-def.disposition.value_or(proximity);
-                    options.weights.push_back(1.0/(0.025+difference*difference));
+                    double weight=1.0/(0.025+difference*difference);
+                    if(def.sameTypeSpread>0)
+                        if(auto nearest=NearestSameProp(room,def,c)) weight*=std::pow(1.0+*nearest,double(def.sameTypeSpread));
+                    options.weights.push_back(weight);
                 }
             if(!options.places.empty()) { choices.push_back(std::move(options)); typeWeights.push_back(def.weight); }
         }

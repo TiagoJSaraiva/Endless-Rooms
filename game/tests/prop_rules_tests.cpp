@@ -152,7 +152,42 @@ void CheckRunLifecycle() {
     }
 }
 }
+// Distância média (tiles, centro a centro) de cada barril ao barril mais próximo, em várias seeds.
+float MeanNearestBarrelDistance(float spread) {
+    // Catálogo real (o orçamento da sala se divide entre os props), só mudando o espalhamento do barril.
+    std::vector<PropDefinition> catalog=GetPropDefinitions();
+    for(auto& def:catalog) if(def.id=="barrel") def.sameTypeSpread=spread;
+    float total=0;int count=0;
+    for(std::uint64_t seed=1;seed<=60;++seed) {
+        Room room=MakeRoom(20,20,RoomType::Normal,BiomeType::Dungeon,seed);
+        PropRules::Initialize(room,catalog);
+        std::vector<TileRect> barrels;
+        for(const auto& p:room.Props()) if(p.definition->id=="barrel") barrels.push_back(p.tiles);
+        for(std::size_t i=0;i<barrels.size();++i) {
+            float nearest=1e9f;
+            for(std::size_t j=0;j<barrels.size();++j) if(i!=j)
+                nearest=std::min(nearest,float(std::hypot(barrels[i].x-barrels[j].x,barrels[i].y-barrels[j].y)));
+            if(barrels.size()>1) { total+=nearest;++count; }
+        }
+    }
+    assert(count>0);
+    return total/count;
+}
+
+void CheckBarrelSpread() {
+    const auto& defs=GetPropDefinitions();
+    auto find=[&](const char* id){ for(const auto& d:defs) if(d.id==id) return &d; return (const PropDefinition*)nullptr; };
+    // Barris tão frequentes quanto vasos, e espalhados.
+    assert(find("barrel")->weight>=find("gray-vase")->weight);
+    assert(find("barrel")->sameTypeSpread>0);
+    const float spread=MeanNearestBarrelDistance(find("barrel")->sameTypeSpread);
+    const float clustered=MeanNearestBarrelDistance(0.0f);
+    std::cout<<"Distancia media entre barris: "<<spread<<" (sem espalhar: "<<clustered<<")"<<std::endl;
+    assert(spread>clustered*1.2f);
+}
+
 int main() {
+    CheckBarrelSpread();
     CheckGeneration();CheckMovementAndDamage();CheckBottomEdgeNavigation();CheckRunLifecycle();
     std::cout<<"Prop rules tests passed\n";
 }

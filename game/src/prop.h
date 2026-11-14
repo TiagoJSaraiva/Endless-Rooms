@@ -36,6 +36,9 @@ struct PropDefinition {
     int heightTiles{1};
     float weight{1.0f};
     std::optional<float> disposition;
+    // Afasta instâncias do mesmo prop: o peso de cada posição é multiplicado por
+    // (1 + distância em tiles à instância mais próxima) ^ sameTypeSpread. 0 desliga.
+    float sameTypeSpread{0.0f};
     bool solid{true};
     float damagePerSecond{0.0f};
     std::optional<DestructibleProp> destructible;

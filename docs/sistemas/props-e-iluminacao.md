@@ -17,10 +17,10 @@ deixar uma bolsa ao destruir o prop. O vaso tem 20% de chance de uma bolsa
 
 | Identificador | Dimensões | Peso | Disposição | Vida | Luz |
 |---|---|---|---|---|---|
-| `gray-vase` | 1×1 | 6 | 0 | 10 | Não |
-| `barrel` | 1×1 | 1 | 0 | Indestrutível | Vela quente, raio 192 px |
-| `bone-jail` | 1×1 | 3 | 0,5 | Indestrutível | Não |
-| `torture-table` | 2×1 | 1 | 0,9 | Indestrutível | Não |
+| `gray-vase` | 1×1 | 3 | 0 | 10 | Não |
+| `barrel` | 1×1 | 3 | 0 | Indestrutível | Vela quente, raio 192 px |
+| `bone-jail` | 2×1 | 3 | 0,5 | Indestrutível | Não |
+| `torture-table` | 3×1 | 1 | 0,9 | Indestrutível | Não |
 
 Todos começam com colisão para jogador e inimigos e dano de contato zero.
 Para cadastrar outro prop, acrescente uma definição e seu PNG em
@@ -43,6 +43,10 @@ separação entre footprints, uma reserva de dois tiles de profundidade nas
 entradas, e verificação de conectividade do piso. Se faltar espaço válido,
 a sala recebe menos props. Disposição 0 favorece paredes, 1 favorece o
 centro e ausência de disposição distribui uniformemente as posições válidas.
+`sameTypeSpread` afasta instâncias do mesmo prop: o peso de cada posição é
+multiplicado por `(1 + distância em tiles à instância mais próxima) ^ spread`.
+O barril usa 3, para que as velas cubram mais da sala; numa sala 20×20 a
+distância média entre barris vizinhos sobe de ~4,3 para ~5,5 tiles.
 
 ## Combate e movimento
 
