@@ -1,8 +1,8 @@
 #include "room_manager.h"
 #include "prop_rules.h"
+#include "room_type_rules.h"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <random>
 #include <unordered_set>
@@ -23,22 +23,6 @@ constexpr int MIN_ROOM_SPACING_TILES = 2;
 // Garante corredores com pelo menos duas tiles por lado.
 constexpr int MIN_CORRIDOR_LENGTH_TILES = MIN_ROOM_SPACING_TILES * 2;
 constexpr int MAX_CORRIDOR_LENGTH_TILES = MIN_CORRIDOR_LENGTH_TILES + 2;
-
-// Peso relativo de cada tipo de sala sorteável. Boss fica fora até a sala de boss ser retomada.
-struct RoomTypeWeight {
-    RoomType type;
-    double weight;
-};
-// Antes, o boss tinha chance crescente por sala (peso − 0,5 por sala),
-// removida junto com a sala de boss na demo. Quando o boss voltar, será preciso reintroduzir
-// uma chance que cresça com o avanço da run, de forma melhor que a antiga.
-constexpr std::array<RoomTypeWeight, 4> kRoomTypeWeights{{
-    // Somam 100: lê-se como porcentagem por sala gerada. Normal fica com o restante.
-    {RoomType::Normal, 71.0},
-    {RoomType::Forge, 12.0},
-    {RoomType::Shop, 12.0},
-    {RoomType::Chest, 5.0},
-}};
 
 int RandomEvenInt(std::mt19937_64& rng, int minInclusive, int maxInclusive) {
     const int firstEven = (minInclusive % 2 == 0) ? minInclusive : minInclusive + 1;
@@ -796,21 +780,14 @@ void RoomManager::AlignWithNeighbor(Room& room, Direction direction, Room& neigh
 RoomType RoomManager::PickRoomType(const RoomCoords& coords) {
     std::mt19937_64 rng(MakeRoomSeed(worldSeed_, coords, static_cast<std::uint64_t>(roomsDiscovered_)));
 
-    double total = 0.0;
-    for (const RoomTypeWeight& entry : kRoomTypeWeights) {
-        total += entry.weight;
-    }
-
-    double pick = RandomDouble(rng, 0.0, total);
-    for (const RoomTypeWeight& entry : kRoomTypeWeights) {
-        if (pick < entry.weight) {
-            return entry.type;
+    // Pesos e exclusão de especiais vizinhos iguais em RoomTypeRules (pesos em room_type_rules.cpp).
+    std::vector<RoomType> neighborTypes;
+    for (Direction direction : {Direction::North, Direction::South, Direction::East, Direction::West}) {
+        if (const Room* neighbor = FindRoom(coords + ToDirectionOffset(direction))) {
+            neighborTypes.push_back(neighbor->GetType());
         }
-        pick -= entry.weight;
     }
-
-    // Só alcançado por arredondamento de ponto flutuante no limite superior.
-    return kRoomTypeWeights.front().type;
+    return RoomTypeRules::Pick(RandomDouble(rng, 0.0, 1.0), neighborTypes);
 }
 
 // Conta salas descobertas; o contador compõe a seed do sorteio de tipo.

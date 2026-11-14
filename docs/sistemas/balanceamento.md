@@ -172,7 +172,7 @@ Tabela de valores por raridade (uma única tabela de dados). Compra = `valor × 
 | Épico (4) | 370 | 480 | 111 |
 | Lendário (5) | 600 | 780 | 180 |
 
-O que cabe numa run (~650 moedas, loja visível em ~92% das runs):
+O que cabe numa run (~650 moedas, loja visível em ~91% das runs):
 - Cura: 1 a 3 poções por loja, 45 cada.
 - 1 arma ou peça de raridade 2 a 3 (195 a 325).
 - Raridade 4 só juntando moedas ou achando em baú; raridade 5 (780) praticamente só em baú.
@@ -192,14 +192,14 @@ Loja, baú e forja:
 
 ### Pesos de tipos de sala
 
-Vigentes, escolhidos pelo desenvolvedor: Normal 71, Forge 12, Shop 12, Chest 5 (somam 100, então cada peso é a porcentagem por sala gerada). Resultado da simulação de seeds (1.9c, `room_simulation_tests`, 500 runs, 10 salas visitadas; ~4 salas geradas por sala visitada):
+Vigentes, escolhidos pelo desenvolvedor: Normal 71, Forge 12, Shop 12, Chest 5 (somam 100, então cada peso é a porcentagem por sala gerada), em `room_type_rules.cpp`. Uma sala especial nunca é vizinha de outra do mesmo tipo: o tipo presente nas quatro coordenadas vizinhas já geradas sai do sorteio (`RoomTypeRules::Pick`). Resultado da simulação de seeds (1.9c, `room_simulation_tests`, 500 runs, 10 salas visitadas; ~4 salas geradas por sala visitada):
 
 | Pesos | Loja visível | Forja visível | Baú visível |
 |---|---:|---:|---:|
-| 71/12/12/5 (vigente) | 91,6% | 93,0% | 61,2% |
+| 71/12/12/5, sem especiais iguais vizinhas (vigente) | 90,6% | 91,4% | 61,2% |
 | 79/5/5/5 (anterior) | 70,0% | 65,8% | 63,6% |
 
-A meta de loja visível (≥ 70%, travada pelo teste) tem folga. Em média, cada run gera 4,7 lojas, 4,8 forjas e 1,9 baús.
+A meta de loja visível (≥ 70%, travada pelo teste) tem folga. Em média, cada run gera 4,1 lojas, 4,3 forjas e 1,8 baús.
 
 ## Atributos dos inimigos (1.7)
 
@@ -250,4 +250,4 @@ Exigem playtest (desenvolvedor jogando):
 | Forja: 100% custa mais que comprar o produto | Custo de 100% = 80% do valor do produto | 1.9b |
 | `dungeon_melee` com `range` maior que o alcance da estocada | Sem correção: o inimigo é substituído | 1.7 |
 | Armas de raridade 3 rendem menos que as de raridade 2 | DPS por tier (tabela acima) | 1.9a |
-| `PickRoomType` aumentava a chance de boss por sala | Já removido na 1.3; comentário em `kRoomTypeWeights` e item em "Pós-demo" para reintroduzir de forma melhor quando o boss voltar | 1.9c |
+| `PickRoomType` aumentava a chance de boss por sala | Já removido na 1.3; comentário em `RoomTypeRules::Weights` e item em "Pós-demo" para reintroduzir de forma melhor quando o boss voltar | 1.9c |

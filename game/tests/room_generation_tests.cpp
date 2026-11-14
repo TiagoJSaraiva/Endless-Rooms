@@ -1,9 +1,11 @@
 #include "room_manager.h"
 #include "biome_config.h"
+#include "room_type_rules.h"
 
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <vector>
 
@@ -180,7 +182,48 @@ void CheckBiomeConfigParsing() {
 
 } // namespace
 
+// Conta os tipos sorteados por `Pick` em rolagens uniformes de [0, 1).
+std::vector<int> PickCounts(const std::vector<RoomType>& neighbors, int samples) {
+    std::vector<int> counts(static_cast<std::size_t>(RoomType::Unknown) + 1, 0);
+    for (int i = 0; i < samples; ++i) {
+        const double roll = (i + 0.5) / samples;
+        ++counts[static_cast<std::size_t>(RoomTypeRules::Pick(roll, neighbors))];
+    }
+    return counts;
+}
+
+int Count(const std::vector<int>& counts, RoomType type) {
+    return counts[static_cast<std::size_t>(type)];
+}
+
+void CheckRoomTypeRules() {
+    constexpr int kSamples = 10000;
+    // Sem vizinhos especiais: os pesos valem como porcentagem (71/12/12/5).
+    const auto free = PickCounts({RoomType::Normal, RoomType::Lobby}, kSamples);
+    assert(Count(free, RoomType::Normal) == 7100);
+    assert(Count(free, RoomType::Forge) == 1200);
+    assert(Count(free, RoomType::Shop) == 1200);
+    assert(Count(free, RoomType::Chest) == 500);
+
+    // Forja vizinha: forja sai do sorteio e o peso dela se redistribui (71/12/5 de 88).
+    const auto nearForge = PickCounts({RoomType::Forge}, kSamples);
+    assert(Count(nearForge, RoomType::Forge) == 0);
+    assert(std::abs(Count(nearForge, RoomType::Normal) - 8068) <= 1);
+    assert(std::abs(Count(nearForge, RoomType::Shop) - 1364) <= 1);
+    assert(std::abs(Count(nearForge, RoomType::Chest) - 568) <= 1);
+
+    // Os três especiais vizinhos: só sobra sala normal.
+    const auto surrounded = PickCounts({RoomType::Shop, RoomType::Forge, RoomType::Chest}, kSamples);
+    assert(Count(surrounded, RoomType::Normal) == kSamples);
+
+    // Limites da rolagem.
+    assert(RoomTypeRules::Pick(0.0, {}) == RoomType::Normal);
+    assert(RoomTypeRules::Pick(1.0, {}) == RoomType::Chest);
+    assert(RoomTypeRules::Pick(1.0, {RoomType::Chest}) == RoomType::Shop);
+}
+
 int main() {
+    CheckRoomTypeRules();
     CheckBiomeConfigParsing();
     CheckWallPropRegistry();
     for (std::uint64_t seed = 1; seed <= 16; ++seed) CheckGeneratedWorld(seed);

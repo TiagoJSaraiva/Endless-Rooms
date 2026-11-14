@@ -1,6 +1,7 @@
 // Simulação headless de runs: mede quantas salas especiais ficam visíveis ao jogador
 // nas primeiras salas visitadas (metas de balanceamento). Usa o RoomManager real, sem janela.
 #include "room_manager.h"
+#include "room_type_rules.h"
 
 #include <cassert>
 #include <cstdint>
@@ -92,7 +93,13 @@ RunResult SimulateRun(std::uint64_t seed) {
     assert(static_cast<int>(visited.size()) == kRoomsToVisit);
 
     for (const auto& [coords, room] : manager.Rooms()) {
-        (void)coords;
+        // Especiais iguais nunca são vizinhas (RoomTypeRules::Pick).
+        if (RoomTypeRules::IsSpecial(room->GetType())) {
+            for (Direction direction : {Direction::North, Direction::South, Direction::East, Direction::West}) {
+                const auto neighbor = manager.Rooms().find(coords + ToDirectionOffset(direction));
+                assert(neighbor == manager.Rooms().end() || neighbor->second->GetType() != room->GetType());
+            }
+        }
         ++result.roomsGenerated;
         if (room->GetType() == RoomType::Shop) ++result.shops;
         if (room->GetType() == RoomType::Forge) ++result.forges;
