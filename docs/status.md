@@ -4,7 +4,8 @@
 - Etapa 0 concluída: fluxo de agentes adaptado do `godot-template` (fluxos `/inicio` `/planejar` `/revisar` `/fim`, `scripts/check.ps1`, hook de toolchain, memória em `docs/`) e regra de commits pelo agente (decisão 0008).
 - Etapa 1 em andamento: 1.1 e 1.6 concluídas; 1.2 a 1.5 implementadas e aguardando validação jogando. Onda 1 (1.7, 1.8, 1.9a, 1.9b, 1.9c) implementada por subagentes, integrada na `main` com check completo passando; aguarda validação jogando.
 - Sprites do cavaleiro e dos inimigos ampliados em 1,4× (`SPRITE_SCALE` nos geradores de `tools/sprites/`). A área de dano virou o retângulo do corpo de cada sprite e os ataques saem da altura das mãos (`body_rules`); o colisor de movimento não mudou.
-- Ajustes de ambientação: mais tochas (raramente vizinhas) e tochas nas paredes laterais de salas normais e corredores; menos vasos; mais barris com vela, espalhados; salas especiais nunca vizinhas de outra do mesmo tipo.
+- Ajustes de ambientação: mais tochas (raramente vizinhas) e tochas nas paredes laterais de salas normais e corredores; menos vasos; mais barris com vela, espalhados; salas especiais nunca vizinhas de outra do mesmo tipo. Tochas laterais são desenhadas acima de props de piso que as cubram.
+- Rebalanceamento manual de armas pelo desenvolvedor (`4913d1d`): Cajado de Carvalho com 4,5 de dano por tick (DPS ~22,8) e Espada Rúnica com 36 de dano e giro de 150 × 40 (DPS médio ~55,9). Fica fora das faixas de `weapon_rules_tests` e da tabela de `armas.md` (ver Bloqueios).
 - Jogo jogável: lobby, salas geradas por bioma, combate melee/ranged, props e tochas com iluminação, reward pouches, inventário, loja, forja e baú.
 
 ## Roadmap até a demo
@@ -65,4 +66,4 @@ Concluída: cada subtarefa foi implementada por um subagente em branch própria,
 - Depois da validação: 1.10 (UI) com o desenvolvedor.
 
 ## Bloqueios
-- Nenhum.
+- Check falhando em `weapon_rules_tests` desde `4913d1d`: Cajado abaixo da faixa 27 a 33 de DPS e Rúnica acima da média máxima 55. O desenvolvedor decide entre ajustar as faixas, `armas.md` e as metas de `balanceamento.md` aos novos valores ou voltar o dano para dentro delas (Cajado 5,4 a 6,5; Rúnica até ~35).
