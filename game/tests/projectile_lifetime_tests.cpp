@@ -106,6 +106,23 @@ void CheckFollowingFamilies() {
     }
 }
 
+// Golpes saem das mãos, acima da posição do dono: ao segui-lo, mantêm essa altura.
+void CheckFollowingFamiliesKeepOriginOffset() {
+    constexpr float kHandHeight = 60.0f;
+    for (int family : {0, 1, 2, 3, 5}) {
+        Vector2 position{0, 0};
+        auto lifetime = std::make_shared<int>(0);
+        ProjectileSystem system;
+        auto context = Context(&position, lifetime);
+        context.origin = Vector2{0, -kHandHeight};
+        system.SpawnProjectile(Following(family), context);
+        position = {100, 100};
+        system.Update(0.01f);
+        assert(system.CollectDamageEvents(Rectangle{136, 100 - kHandHeight - 4, 8, 8}, 1).size() == 1);
+        assert(system.CollectDamageEvents(Rectangle{136, 96, 8, 8}, 2).empty());
+    }
+}
+
 void CheckReusedAddress() {
     Vector2 position{0, 0};
     ProjectileSystem system;
@@ -247,6 +264,6 @@ void CheckDungeonEnemyAttacks() {
 
 int main() {
     CheckFollowingFamilies(); CheckReusedAddress(); CheckIndependentAttacks(); CheckEnemyDeathAndRespawn();
-    CheckDungeonEnemyAttacks();
+    CheckDungeonEnemyAttacks(); CheckFollowingFamiliesKeepOriginOffset();
     std::cout << "Projectile lifetime tests passed\n";
 }

@@ -9,6 +9,11 @@
 using namespace projectile_detail;
 
 namespace {
+// Deslocamento entre a origem do golpe (as mãos) e a posição do dono, mantido enquanto ele anda.
+Vector2 OffsetFromOwner(Vector2 origin, const Vector2* followTarget) {
+    return (followTarget != nullptr) ? Vector2Subtract(origin, *followTarget) : Vector2{0.0f, 0.0f};
+}
+
 class BluntProjectile final : public ProjectileSystem::ProjectileInstance {
 public:
     BluntProjectile(const ProjectileCommonParams& common,
@@ -21,6 +26,7 @@ public:
           params_(params),
           origin_(origin),
           followTarget_(followTarget),
+          followOffset_(OffsetFromOwner(origin, followTarget)),
           startCenterDegrees_(startCenterDegrees),
           endCenterDegrees_(endCenterDegrees) {}
 
@@ -33,7 +39,7 @@ public:
     // Atualiza origem e controla tempo de exibiÃ§Ã£o do feixe/fade.
     void Update(float deltaSeconds) override {
         if (followTarget_ != nullptr) {
-            origin_ = *followTarget_;
+            origin_ = Vector2Add(*followTarget_, followOffset_);
         }
 
         elapsed_ += deltaSeconds;
@@ -171,6 +177,7 @@ private:
     BluntProjectileParams params_{};
     Vector2 origin_{};
     const Vector2* followTarget_{nullptr};
+    Vector2 followOffset_{};
     float startCenterDegrees_{0.0f};
     float endCenterDegrees_{0.0f};
     float elapsed_{0.0f};
@@ -192,12 +199,13 @@ public:
           params_(params),
           origin_(origin),
           followTarget_(followTarget),
+          followOffset_(OffsetFromOwner(origin, followTarget)),
           startCenterDegrees_(startCenterDegrees),
           endCenterDegrees_(endCenterDegrees) {}
 
     void Update(float deltaSeconds) override {
         if (followTarget_ != nullptr) {
-            origin_ = *followTarget_;
+            origin_ = Vector2Add(*followTarget_, followOffset_);
         }
 
         elapsed_ += deltaSeconds;
@@ -317,6 +325,7 @@ private:
     SwingProjectileParams params_{};
     Vector2 origin_{};
     const Vector2* followTarget_{nullptr};
+    Vector2 followOffset_{};
     float startCenterDegrees_{0.0f};
     float endCenterDegrees_{0.0f};
     float elapsed_{0.0f};
@@ -520,11 +529,12 @@ public:
           params_(params),
           origin_(origin),
           followTarget_(followTarget),
+          followOffset_(OffsetFromOwner(origin, followTarget)),
           currentAngleDeg_(initialAngleDegrees) {}
 
     void Update(float deltaSeconds) override {
         if (followTarget_ != nullptr && params_.followOwner) {
-            origin_ = *followTarget_;
+            origin_ = Vector2Add(*followTarget_, followOffset_);
         }
 
         elapsed_ += deltaSeconds;
@@ -629,6 +639,7 @@ private:
     FullCircleSwingParams params_{};
     Vector2 origin_{};
     const Vector2* followTarget_{nullptr};
+    Vector2 followOffset_{};
     float currentAngleDeg_{0.0f};
     float totalRotationDeg_{0.0f};
     float elapsed_{0.0f};
