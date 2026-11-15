@@ -7,6 +7,7 @@
 - Ajustes de ambientação: mais tochas (raramente vizinhas) e tochas nas paredes laterais de salas normais e corredores; menos vasos; mais barris com vela, espalhados; salas especiais nunca vizinhas de outra do mesmo tipo. Tochas laterais são desenhadas acima de props de piso que as cubram.
 - Rebalanceamento manual de armas pelo desenvolvedor (`4913d1d`): Cajado de Carvalho com 4,5 de dano por tick (DPS ~22,8) e Espada Rúnica com 36 de dano e giro de 150 × 40 (DPS médio ~55,9). As faixas de `weapon_rules_tests`, `armas.md` e `balanceamento.md` foram ajustadas a esses valores (Cajado 21 a 25; Rúnica com média 50 a 60).
 - Correções visuais de luz e paredes: a luz das fontes termina na borda real da sala (sem faixa no vazio abaixo); a face da parede inferior fica na escuridão do bioma, sem luz de nenhuma fonte (nem das tochas presas a ela); o rodapé das paredes inferiores se dissolve no vazio em toda a extensão (corrigidas colunas sem esmaecer junto a corredores alinhados); a máscara de corredores laterais fechados cobre o corredor inteiro na vertical, com transição junto à porta. Aguardam validação jogando (roteiros 10 e 11 em `props-e-iluminacao.md`).
+- Publicação (etapas 3 e 4, decisão 0011): versão web no GitHub Pages (https://tiagojsaraiva.github.io/Endless-Rooms/), recompilada e publicada pelo CI a cada push na `main`; tags `v*` geram a release com `EndlessRooms-windows.zip`. README em inglês e LEIA-ME em português, no estilo do `kill-em-clankers-game`. O menu principal (etapa 2) ficou para depois da publicação, a pedido do desenvolvedor.
 - Jogo jogável: lobby, salas geradas por bioma, combate melee/ranged, props e tochas com iluminação, reward pouches, inventário, loja, forja e baú.
 
 ## Roadmap até a demo
@@ -15,8 +16,8 @@ Cada etapa é planejada com `/planejar` (levantamento de requisitos junto com o 
 - [x] **0 — Fluxo de agentes**: instruções, fluxos `/inicio` `/planejar` `/revisar` `/fim`, check e memória em `docs/`, no modelo do `godot-template`.
 - [ ] **1 — Escopo da demo**: definir o conteúdo da demo e garantir que tudo nesse escopo esteja completamente funcional.
 - [ ] **2 — Menu principal** do jogo.
-- [ ] **3 — Deploy**: decidir entre embed no navegador e itch.io, e as decisões auxiliares (CI, build web).
-- [ ] **4 — README** final, no estilo do README do projeto `kill-em-clankers-game`.
+- [x] **3 — Deploy**: GitHub Pages com build web pelo CI e release do Windows por tag (decisão 0011). *Falta validação jogando no navegador.*
+- [x] **4 — README** em inglês e LEIA-ME em português, no estilo do `kill-em-clankers-game`. *Faltam captura de tela, créditos da arte e licença.*
 
 ## Etapa 1 — Escopo da demo
 
@@ -62,6 +63,8 @@ Concluída: cada subtarefa foi implementada por um subagente em branch própria,
 - Retomar os biomas caverna e mansão.
 
 ## Próximo passo
+- Desenvolvedor: jogar a versão web (https://tiagojsaraiva.github.io/Endless-Rooms/) e conferir carregamento, ritmo dos quadros, mouse (mira e clique direito), teclado (Tab, 1 a 5) e o escurecimento por tochas; reportar o que divergir do desktop.
+- Desenvolvedor: informar origem e licença da arte (chão, paredes, props, itens) e a licença do projeto, e fornecer uma captura de tela de gameplay para os READMEs (TODO no fim de `README.md` e `LEIA-ME.md`).
 - Desenvolvedor: validar jogando 1.2 a 1.5 e a onda 1 (roteiros em `inimigos.md`, `armas.md`, `economia.md` e `balanceamento.md`), depois o playtest 1.9d; validar a escala 1,4× dos sprites, a área de dano retangular e a saída dos ataques pelas mãos (roteiro em `inimigos.md`; conferir também `displayOffset` de arco, cajado e espada em `armas.md`); jogar com os pesos de salas 71/12/12/5 (mais lojas e forjas, menos salas normais) e dizer se a quantidade de moedas por run continua boa.
 - Desenvolvedor: validar jogando os ajustes de ambientação (roteiro 9 em `props-e-iluminacao.md`): tamanho e posição das tochas laterais, quantidade de tochas, vasos e barris, luz geral das salas.
 - Desenvolvedor: validar jogando as correções de luz, rodapé e máscara de corredores (roteiros 10 e 11 em `props-e-iluminacao.md`); se o rodapé (32 px) ou a transição da máscara (64 px) pedirem outro tamanho, os ajustes são `kFooterFadeHeight` em `wall_tiles.cpp` e `kHorizontalFadeWidth` em `door_visual_rules.cpp`.

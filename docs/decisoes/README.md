@@ -15,6 +15,7 @@ Decisão aceita não é editada para mudar de ideia: crie uma nova e marque a an
 | [0008](0008-commits-pelo-agente.md) | Commits feitos pelo agente, por módulo, na main |
 | [0009](0009-escuridao-em-tela-cheia.md) | Escuridão como filtro de tela cheia |
 | [0010](0010-corpo-do-sprite-no-combate.md) | Corpo do sprite como área de dano e origem dos ataques |
+| [0011](0011-deploy-web-e-release-windows.md) | Deploy web no GitHub Pages e release para Windows |
 
 Modelo:
 

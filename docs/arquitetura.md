@@ -15,6 +15,7 @@ AGENTS.md, CLAUDE.md    instruções para agentes
 .agents/fluxos/         fluxos inicio / planejar / revisar / fim
 .claude/                comandos e hook do Claude Code
 scripts/                check.ps1 (verificação) e check-toolchain.ps1
+.github/workflows/      deploy-web.yml (GitHub Pages) e release-windows.yml (tags v*)
 tools/sprites/          geradores de sprites (Python/Pillow; regeneram os PNGs de game/assets/)
 docs/                   memória do projeto (este arquivo, status, sistemas, decisões)
 tools/sprites/         geradores de sprites placeholder (Python + Pillow), um script por conjunto
@@ -24,9 +25,11 @@ game/
   src/                  código do jogo (todo .cpp entra no build)
   tests/                um executável de teste por domínio
   assets/               sprites e fonte (caminhos relativos a game/)
+  web/shell.html        página que hospeda o build web
   inc/                  raygui.h e wrappers rlcpp (terceiros)
   vendor/raylib/        raylib 5.5 (terceiros; preservar licença)
   obj/                  objetos de build (local, não versionado)
+  obj-web/, build-web/  objetos e saída do build web (local, não versionado)
 ```
 
 ## Módulos
@@ -40,7 +43,7 @@ game/
 | Recompensas | `reward_pouch` declara pools e isola sorteios; `reward_pouch_operations` integra mortes/destruição ao spawn e entrega recompensas; `reward_pouch_renderer` administra texturas e desenho. |
 | Inventário e economia | `inventory_rules` contém políticas de categorias, pilhas, tabela de valores, preços de compra e venda, sorteio de loja e baú e chance de forja (ver `sistemas/economia.md`); `inventory_operations` manipula slots e armazenamento; `ui_inventory` liga essas operações aos controles e desenha as telas de inventário, loja, forja e baú. |
 | Interface e recursos | `hud` desenha informações de jogo; `font_manager` administra a fonte; `chest` define os tipos de armazenamento; `debug_console` implementa comandos de depuração; `run_stats` acumula as estatísticas da run (regras puras) e `ui_run_summary` desenha o resumo de fim de run. |
-| Integração | `main.cpp` conecta os módulos e processa o ciclo do jogo; `station_persistence` sincroniza forjas e lojas entre UI e salas. |
+| Integração | `main.cpp` conecta os módulos e processa o ciclo do jogo; `game_window` abre a janela e dá o ritmo do loop no desktop e no navegador (único ponto com `#ifdef PLATFORM_WEB`); `station_persistence` sincroniza forjas e lojas entre UI e salas. |
 
 Notas detalhadas por sistema ficam em [`sistemas/`](sistemas/README.md).
 
@@ -56,6 +59,8 @@ Notas detalhadas por sistema ficam em [`sistemas/`](sistemas/README.md).
 - `mingw32-make test` compila e executa os testes headless; os testes de renderização (`test-floor-render`, `test-wall-render`, `test-prop-render`, `test-wall-prop-render`, `test-reward-pouch-render`) abrem uma janela oculta.
 - `scripts/check.ps1` encadeia tudo isso (decisão [0005](decisoes/0005-pipeline-de-verificacao.md)).
 - Os assets usam caminhos relativos a `assets/`; execute o binário com `game/` como diretório de trabalho.
+- `PORTABLE=TRUE` gera o exe autocontido (runtime estático, sem console) das releases.
+- `PLATFORM=PLATFORM_WEB` (com o emsdk ativado) gera `game/build-web/` com Emscripten e ASYNCIFY; `assets/` vai no `.data` com os mesmos caminhos. Deploy e releases pelo CI (decisão [0011](decisoes/0011-deploy-web-e-release-windows.md)).
 
 ## Direção de evolução
 
