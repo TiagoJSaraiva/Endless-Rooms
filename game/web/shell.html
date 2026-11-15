@@ -5,13 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Endless Rooms</title>
     <meta name="description" content="Endless Rooms: a 2D action roguelite made with C++17 and raylib.">
+    <link rel="preload" href="assets/font/alagard.ttf" as="font" type="font/ttf" crossorigin>
     <style>
+        /* Same font as the game. The Makefile copies it next to the page, outside the .data
+           package, so it is ready while the package downloads. */
+        @font-face {
+            font-family: "Alagard";
+            src: url("assets/font/alagard.ttf") format("truetype");
+            font-display: block;
+        }
         :root {
             --bg: #0b0a0d;
-            --panel: #16131a;
-            --text: #e6dfd3;
-            --muted: #9a8f80;
-            --accent: #d9a441;
+            --text: #d9c9a8;
+            --muted: #8f8170;
+            --accent: #e0952e;
+            /* Key art is ~72 px tall; everything in the controls block scales from this height. */
+            --key-height: clamp(22px, min(4.2vw, 5vh), 36px);
         }
         * { box-sizing: border-box; }
         html, body {
@@ -19,7 +28,7 @@
             height: 100%;
             background: var(--bg);
             color: var(--text);
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            font-family: "Alagard", system-ui, sans-serif;
             overflow: hidden;
         }
         #stage {
@@ -45,43 +54,63 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 16px;
+            gap: clamp(12px, 3vh, 28px);
+            padding: 16px;
             background: var(--bg);
             transition: opacity 0.4s ease;
         }
         #overlay.hidden { opacity: 0; pointer-events: none; }
         #overlay.ready { cursor: pointer; }
-        #overlay.ready #status { color: var(--accent); font-size: 18px; }
-        #overlay h1 {
-            margin: 0;
-            font-size: clamp(28px, 6vw, 56px);
-            letter-spacing: 0.08em;
-            color: var(--accent);
+        #overlay.ready #status { color: var(--accent); }
+        #logo {
+            display: block;
+            /* Capped by height too, so short windows still fit the controls below. */
+            width: min(720px, 90vw, 38vh * 1736 / 724);
+            height: auto;
         }
-        #status { color: var(--muted); font-size: 15px; min-height: 1.2em; }
+        /* Frame and fill share the same 1837x191 canvas; the fill is revealed by clipping its right side. */
         #progress {
-            width: min(320px, 70vw);
-            height: 6px;
-            background: var(--panel);
-            border-radius: 3px;
-            overflow: hidden;
+            position: relative;
+            width: min(560px, 80vw);
+            aspect-ratio: 1837 / 191;
         }
-        #progress-bar { width: 0; height: 100%; background: var(--accent); transition: width 0.2s; }
-        #controls {
-            margin-top: 8px;
+        #progress img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #status {
+            min-height: 1.2em;
             color: var(--muted);
-            font-size: 14px;
-            line-height: 1.7;
-            text-align: center;
+            font-size: clamp(18px, 2.6vw, 26px);
+            letter-spacing: 0.04em;
         }
-        kbd {
-            padding: 1px 6px;
-            border: 1px solid #3a3340;
-            border-radius: 4px;
-            background: var(--panel);
-            color: var(--text);
-            font-family: inherit;
-            font-size: 13px;
+        #controls {
+            display: grid;
+            grid-template-columns: auto auto;
+            justify-items: start;
+            align-items: center;
+            column-gap: calc(var(--key-height) * 1.2);
+            row-gap: calc(var(--key-height) * 0.45);
+            margin-top: calc(var(--key-height) * 0.5);
+            font-size: calc(var(--key-height) * 0.55);
+            letter-spacing: 0.03em;
+        }
+        .control {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: calc(var(--key-height) * 0.2);
+        }
+        /* Space between "E interact" and "Tab inventory" in the same cell. */
+        .cell .control + .control { margin-left: calc(var(--key-height) * 0.6); }
+        .cell { display: flex; flex-wrap: wrap; align-items: center; row-gap: 8px; }
+        .control span { margin-left: calc(var(--key-height) * 0.2); }
+        .control .separator { margin: 0 calc(var(--key-height) * 0.1); }
+        .key { display: block; height: var(--key-height); width: auto; }
+        @media (max-width: 640px) {
+            #controls { grid-template-columns: auto; }
         }
         #fullscreen {
             position: fixed;
@@ -93,7 +122,7 @@
             background: rgba(22, 19, 26, 0.8);
             color: var(--text);
             font: inherit;
-            font-size: 13px;
+            font-size: 15px;
             cursor: pointer;
             opacity: 0.6;
         }
@@ -105,14 +134,37 @@
         <canvas id="canvas" tabindex="-1"></canvas>
     </div>
     <div id="overlay">
-        <h1>ENDLESS ROOMS</h1>
-        <div id="progress"><div id="progress-bar"></div></div>
-        <div id="status">Loading…</div>
+        <img id="logo" src="assets/logo.png" alt="Endless Rooms">
+        <div id="progress">
+            <img src="assets/loading_bar_frame.png" alt="">
+            <img id="progress-fill" src="assets/loading_bar_fill.png" alt="">
+        </div>
+        <div id="status">Loading...</div>
         <div id="controls">
-            <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> move &nbsp;·&nbsp;
-            <kbd>Left</kbd> / <kbd>Right</kbd> click attack<br>
-            <kbd>E</kbd> interact &nbsp;·&nbsp; <kbd>Tab</kbd> inventory &nbsp;·&nbsp;
-            <kbd>1</kbd>–<kbd>5</kbd> equipment abilities
+            <div class="cell">
+                <div class="control">
+                    <img class="key" src="assets/keys/e.png" alt="E"><span>interact</span>
+                </div>
+                <div class="control">
+                    <img class="key" src="assets/keys/tab.png" alt="Tab"><span>inventory</span>
+                </div>
+            </div>
+            <div class="control">
+                <img class="key" src="assets/keys/1.png" alt="1">
+                <span class="separator">-</span>
+                <img class="key" src="assets/keys/5.png" alt="5"><span>equipment abilities</span>
+            </div>
+            <div class="control">
+                <img class="key" src="assets/keys/w.png" alt="W">
+                <img class="key" src="assets/keys/a.png" alt="A">
+                <img class="key" src="assets/keys/s.png" alt="S">
+                <img class="key" src="assets/keys/d.png" alt="D"><span>move</span>
+            </div>
+            <div class="control">
+                <img class="key" src="assets/keys/left.png" alt="Left">
+                <span class="separator">/</span>
+                <img class="key" src="assets/keys/right.png" alt="Right"><span>click attack</span>
+            </div>
         </div>
     </div>
     <button id="fullscreen" type="button">Fullscreen</button>
@@ -121,7 +173,20 @@
         const canvas = document.getElementById('canvas');
         const overlay = document.getElementById('overlay');
         const statusEl = document.getElementById('status');
-        const progressBar = document.getElementById('progress-bar');
+        const progressFill = document.getElementById('progress-fill');
+
+        // Horizontal span of the fill inside its 1837 px wide image (the rest is transparent margin).
+        const FILL_IMAGE_WIDTH = 1837;
+        const FILL_START_X = 147;
+        const FILL_END_X = 1695;
+
+        function setProgress(fraction) {
+            const clamped = Math.min(Math.max(fraction, 0), 1);
+            const visibleEndX = FILL_START_X + (FILL_END_X - FILL_START_X) * clamped;
+            const hiddenRight = 100 * (FILL_IMAGE_WIDTH - visibleEndX) / FILL_IMAGE_WIDTH;
+            progressFill.style.clipPath = `inset(0 ${hiddenRight}% 0 0)`;
+        }
+        setProgress(0);
 
         // Right click is the off-hand attack, so the browser menu must not open over the game.
         canvas.addEventListener('contextmenu', (event) => event.preventDefault());
@@ -145,17 +210,19 @@
                 // Emscripten reports "Downloading data... (loaded/total)".
                 const match = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
                 if (match) {
-                    statusEl.textContent = 'Loading assets…';
-                    progressBar.style.width = (100 * parseInt(match[2]) / parseInt(match[4])) + '%';
+                    // The game font has no ellipsis glyph, so the page uses three dots.
+                    statusEl.textContent = 'Loading assets...';
+                    setProgress(parseInt(match[2]) / parseInt(match[4]));
                 } else {
                     statusEl.textContent = text;
                 }
             },
             monitorRunDependencies: (left) => {
-                if (left === 0) progressBar.style.width = '100%';
+                if (left === 0) setProgress(1);
             },
             onRuntimeInitialized: () => {
                 // The game starts in the safe lobby; the click also gives the canvas keyboard focus.
+                setProgress(1);
                 statusEl.textContent = 'Click to play';
                 overlay.classList.add('ready');
                 overlay.addEventListener('click', () => {
