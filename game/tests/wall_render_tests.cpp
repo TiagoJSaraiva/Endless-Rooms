@@ -259,6 +259,33 @@ void TestTwoTileWallRendering(RenderTexture2D target) {
                      GetImageColor(south, 4 * TILE_SIZE - 8, southFloorBottomY - TILE_SIZE / 2 - 2));
     UnloadImage(south);
 
+    // Porta sul fechada: o corredor e seus acabamentos ficam ocultos, então a ponta da parede
+    // inferior sob eles aparece e precisa esmaecer como o resto.
+    southState->open = false;
+    Image closedSouth = Render(walls, {{&southRoom, 1.0f}}, target, true);
+    ExpectPixelColor(closedSouth, 4 * TILE_SIZE - 8, southFloorBottomY - TILE_SIZE / 2 - 2, bottom);
+    ExpectPixelColor(closedSouth, 4 * TILE_SIZE - 8, southFloorBottomY - 1, VOID_COLOR);
+    ExpectPixelColor(closedSouth, 6 * TILE_SIZE + 8, southFloorBottomY - 1, VOID_COLOR);
+    UnloadImage(closedSouth);
+
+    // Corredor ao norte na mesma coluna: as faixas laterais dele seguem para baixo, mas estão
+    // longe da parede inferior e não podem interromper o rodapé dela.
+    Room northRoom = MakeRoom({0, 4}, BiomeType::Cave, 2, 8, 6, 2);
+    auto northState = std::make_shared<DoorInstance>();
+    northState->open = true;
+    Doorway northDoor;
+    northDoor.direction = Direction::North;
+    northDoor.offset = 2;
+    northDoor.width = 2;
+    northDoor.corridorTiles = TileRect{4, 4, 2, 4};
+    northDoor.doorState = northState;
+    northRoom.Layout().doors.push_back(northDoor);
+    Image north = Render(walls, {{&northRoom, 1.0f}}, target, true);
+    for (const int x : {4 * TILE_SIZE - 8, 4 * TILE_SIZE + 8, 6 * TILE_SIZE - 8, 6 * TILE_SIZE + 8}) {
+        ExpectPixelColor(north, x, southFloorBottomY - 1, VOID_COLOR);
+    }
+    UnloadImage(north);
+
     Room alignedRoom = MakeRoom({1, 0}, BiomeType::Cave, 12, 2, 4, 4);
     const std::vector<WallRules::RoomView> views{{&room, 1.0f}, {&alignedRoom, 1.0f}};
     const int sampleX = 3 * TILE_SIZE + TILE_SIZE / 2;

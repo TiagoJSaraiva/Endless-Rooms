@@ -340,36 +340,21 @@ std::vector<WallTiles::FooterFade> WallTiles::FooterFades(
     for (const auto& module : modules) {
         const Rectangle bounds = WallRules::ModuleBounds(module);
         const float height = std::min(kFooterFadeHeight, bounds.height);
-        Rectangle strip{bounds.x, bottomOf(bounds) - height, bounds.width, height};
-        if (module.segment.section == WallRules::Section::Side) {
+        const Rectangle strip{bounds.x, bottomOf(bounds) - height, bounds.width, height};
+        const bool sideWall = module.segment.section == WallRules::Section::Side;
+        if (sideWall) {
             // Cantos e acabamentos laterais que terminam junto de uma parede inferior somem com ela.
             bool endsWithBottomWall = false;
             for (const auto& wall : bottomWalls)
                 if (std::abs(bottomOf(wall) - bottomOf(bounds)) < kEdgeTolerance && touchesX(wall, bounds))
                     endsWithBottomWall = true;
             if (!endsWithBottomWall || continues(bounds)) continue;
-        } else if (module.segment.section == WallRules::Section::Bottom) {
-            // Acabamentos que seguem para o corredor ficam sobre a ponta da parede inferior:
-            // o rodapé dela para antes deles, senão os cobriria.
-            for (const auto& side : continuingSides) {
-                const float left = strip.x;
-                const float right = strip.x + strip.width;
-                if (side.x >= right || side.x + side.width <= left) continue;
-                const bool atLeftEnd = side.x + side.width * 0.5f < (left + right) * 0.5f;
-                if (atLeftEnd) {
-                    strip.x = side.x + side.width;
-                    strip.width = right - strip.x;
-                } else {
-                    strip.width = side.x - left;
-                }
-            }
-            if (strip.width <= 0.0f) continue;
-        } else {
+        } else if (module.segment.section != WallRules::Section::Bottom) {
             continue;
         }
         const float visibility = ForegroundVisibility(module.segment, useBottomWallTweens);
         if (visibility <= 0.0f) continue;
-        fades.push_back({strip, visibility});
+        fades.push_back({strip, visibility, sideWall});
     }
     return fades;
 }
@@ -399,59 +384,76 @@ void WallTiles::Draw(const WallRules::Frame& frame, bool foreground,
             modules.push_back(module);
         }
     }
-    std::sort(modules.begin(), modules.end(), [](const auto& a, const auto& b) {
+    // Acabamentos laterais vêm por último: ficam sobre a ponta da parede inferior.
+    constexpr int kSideFinishOrder = 2;
+    const auto drawOrder = [](const WallRules::Segment& segment) {
+        if (segment.section == WallRules::Section::Side) {
+            return segment.sidePlacement == WallRules::SidePlacement::Edge ? 0 : kSideFinishOrder;
+        }
+        return segment.section == WallRules::Section::Upper ? 1 : 0;
+    };
+    std::sort(modules.begin(), modules.end(), [&drawOrder](const auto& a, const auto& b) {
         const auto& aSegment = a.segment;
         const auto& bSegment = b.segment;
-        const auto drawOrder = [](const WallRules::Segment& segment) {
-            if (segment.section == WallRules::Section::Side) {
-                return segment.sidePlacement == WallRules::SidePlacement::Edge ? 0 : 2;
-            }
-            return segment.section == WallRules::Section::Upper ? 1 : 0;
-        };
         return std::make_tuple(drawOrder(aSegment), aSegment.position.y, aSegment.position.x,
                                aSegment.section) <
                std::make_tuple(drawOrder(bSegment), bSegment.position.y, bSegment.position.x,
                                bSegment.section);
     });
 
-    for (const auto& module : modules) {
-        auto drawModule = module;
-        auto& segment = drawModule.segment;
-        segment.visibility = ForegroundVisibility(segment, useBottomWallTweens);
-
-        WallRules::WallType selectedWallType = segment.wallType;
-        std::size_t catalogIndex = CatalogIndex(segment.biome, segment.section, selectedWallType);
-        if (selectedWallType == WallRules::WallType::Edge &&
-            catalogs_[catalogIndex].textures.empty()) {
-            selectedWallType = WallRules::WallType::Standard;
-            catalogIndex = CatalogIndex(segment.biome, WallRules::Section::Side, selectedWallType);
-        }
-        const auto& catalog = catalogs_[catalogIndex];
-        const auto& choice = memory_.GetOrCreate(segment.position, segment.section,
-                                                  segment.biome, catalog.cumulative,
-                                                  segment.sidePlacement, selectedWallType);
-        if (choice.sprite == WallRules::NoSprite) {
-            DrawFallback(drawModule);
-            continue;
-        }
-
-        const Texture2D texture = catalog.textures[choice.sprite];
-        const Rectangle source{0.0f, 0.0f, static_cast<float>(texture.width),
-                               static_cast<float>(texture.height)};
-        const Rectangle destination = WallRules::ModuleBounds(module);
-        DrawTexturePro(texture, source, destination, Vector2{0.0f, 0.0f}, 0.0f,
-                       ColorAlpha(WHITE, segment.visibility));
+    if (!foreground) {
+        for (const auto& module : modules) DrawModule(module, useBottomWallTweens);
+        return;
     }
 
-    if (!foreground) return;
-    // O rodapé vem depois de todas as paredes para também cobrir as faixas laterais dos cantos,
-    // desenhadas no passe de fundo.
-    for (const auto& fade : FooterFades(allModules, useBottomWallTweens)) {
-        const Rectangle& strip = fade.strip;
-        DrawRectangleGradientV(static_cast<int>(strip.x), static_cast<int>(strip.y),
-                               static_cast<int>(strip.width), static_cast<int>(strip.height),
-                               ColorAlpha(VOID_COLOR, 0.0f), ColorAlpha(VOID_COLOR, fade.visibility));
+    const auto fades = FooterFades(allModules, useBottomWallTweens);
+    const auto drawFades = [&fades](bool sideWalls) {
+        for (const auto& fade : fades) {
+            if (fade.sideWall != sideWalls) continue;
+            const Rectangle& strip = fade.strip;
+            DrawRectangleGradientV(static_cast<int>(strip.x), static_cast<int>(strip.y),
+                                   static_cast<int>(strip.width), static_cast<int>(strip.height),
+                                   ColorAlpha(VOID_COLOR, 0.0f), ColorAlpha(VOID_COLOR, fade.visibility));
+        }
+    };
+    // O rodapé da parede inferior vem antes dos acabamentos, que o cobrem quando visíveis; onde
+    // estão ocultos (corredor fechado), a ponta da parede aparece já esmaecida. O rodapé das
+    // faixas laterais vem por último para também cobrir os cantos, desenhados no passe de fundo.
+    const auto firstSideFinish = std::partition_point(modules.begin(), modules.end(),
+        [&drawOrder](const auto& module) { return drawOrder(module.segment) < kSideFinishOrder; });
+    for (auto it = modules.begin(); it != firstSideFinish; ++it) DrawModule(*it, useBottomWallTweens);
+    drawFades(false);
+    for (auto it = firstSideFinish; it != modules.end(); ++it) DrawModule(*it, useBottomWallTweens);
+    drawFades(true);
+}
+
+void WallTiles::DrawModule(const WallRules::Module& module, bool useBottomWallTweens) const {
+    auto drawModule = module;
+    auto& segment = drawModule.segment;
+    segment.visibility = ForegroundVisibility(segment, useBottomWallTweens);
+
+    WallRules::WallType selectedWallType = segment.wallType;
+    std::size_t catalogIndex = CatalogIndex(segment.biome, segment.section, selectedWallType);
+    if (selectedWallType == WallRules::WallType::Edge &&
+        catalogs_[catalogIndex].textures.empty()) {
+        selectedWallType = WallRules::WallType::Standard;
+        catalogIndex = CatalogIndex(segment.biome, WallRules::Section::Side, selectedWallType);
     }
+    const auto& catalog = catalogs_[catalogIndex];
+    const auto& choice = memory_.GetOrCreate(segment.position, segment.section,
+                                              segment.biome, catalog.cumulative,
+                                              segment.sidePlacement, selectedWallType);
+    if (choice.sprite == WallRules::NoSprite) {
+        DrawFallback(drawModule);
+        return;
+    }
+
+    const Texture2D texture = catalog.textures[choice.sprite];
+    const Rectangle source{0.0f, 0.0f, static_cast<float>(texture.width),
+                           static_cast<float>(texture.height)};
+    const Rectangle destination = WallRules::ModuleBounds(module);
+    DrawTexturePro(texture, source, destination, Vector2{0.0f, 0.0f}, 0.0f,
+                   ColorAlpha(WHITE, segment.visibility));
 }
 
 void WallTiles::DrawFallback(const WallRules::Module& module) const {

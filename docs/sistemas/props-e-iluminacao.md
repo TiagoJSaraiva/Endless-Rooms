@@ -222,7 +222,9 @@ O rodapé da parede inferior (últimos 32 px) se dissolve na cor do vazio
 `WallTiles` desenha o degradê no fim do passe frontal, com a mesma opacidade da
 parede, e o estende às faixas laterais que terminam junto dela (cantos e
 acabamentos). Faixas que seguem para baixo, como as paredes de um corredor ao
-sul, não ganham rodapé, e o rodapé da parede inferior para antes delas. O mapa
+sul, não ganham rodapé. O rodapé cobre a parede inferior inteira e é desenhado
+antes dos acabamentos laterais: visíveis, eles ficam por cima dele; ocultos
+(corredor fechado), a ponta da parede sob eles aparece já esmaecida. O mapa
 de luz recebe o mesmo degradê até o nível ambiente (oclusor `fadesDown`, depois
 de todas as fontes), para que a base termine idêntica ao vazio mesmo junto de
 uma tocha.

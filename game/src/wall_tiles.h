@@ -44,6 +44,7 @@ private:
               bool useBottomWallTweens = false) const;
     void UpdateBottomWallTweens(const WallRules::Frame& frame,
                                 Rectangle playerBounds, float deltaSeconds) const;
+    void DrawModule(const WallRules::Module& module, bool useBottomWallTweens) const;
     void DrawFallback(const WallRules::Module& module) const;
     // Visibilidade da revelação combinada com a translucidez da fileira inferior, se houver.
     float ForegroundVisibility(const WallRules::Segment& segment, bool useBottomWallTweens) const;
@@ -52,6 +53,7 @@ private:
     struct FooterFade {
         Rectangle strip;
         float visibility;
+        bool sideWall; // canto ou acabamento lateral, desenhado depois da parede inferior
     };
     std::vector<FooterFade> FooterFades(const std::vector<WallRules::Module>& modules,
                                         bool useBottomWallTweens) const;
