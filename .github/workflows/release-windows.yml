@@ -27,6 +27,8 @@ jobs:
         run: |
           # O MinGW do MSYS2 vem antes de outros toolchains da imagem do runner.
           $env:PATH = "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin;$env:PATH"
+          # No runner o make usa o sh do Git, que quebra o "cmd /C" que cria obj/ no Makefile.
+          New-Item -ItemType Directory -Force game/obj | Out-Null
           mingw32-make -C game -j4 game PORTABLE=TRUE
           if ($LASTEXITCODE -ne 0) { exit 1 }
           mingw32-make -C game -j4 test
