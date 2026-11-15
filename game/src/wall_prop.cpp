@@ -139,7 +139,9 @@ std::vector<WallPropInstance> Generate(const std::vector<WallRules::RoomView>& r
         complete.push_back({view.room, 1.0f});
         owners.emplace(view.room->GetCoords(), view.room);
     }
-    const auto frame = WallRules::BuildFrame(complete);
+    // Portas fechadas não podem apagar as paredes laterais dos corredores: a geração roda quando
+    // salas novas surgem, e o estado das portas nesse instante decidiria se o corredor ganha tocha.
+    const auto frame = WallRules::BuildFrame(complete, WallRules::CorridorSides::AllOpen);
     auto modules = WallRules::BuildModules(frame);
     std::sort(modules.begin(), modules.end(), [](const auto& a, const auto& b) {
         return std::tie(a.segment.position.y, a.segment.position.x, a.segment.section) <

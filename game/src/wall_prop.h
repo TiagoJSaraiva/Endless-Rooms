@@ -57,7 +57,8 @@ struct GenerationSettings {
     float adjacentChanceFactor{0.2f};
 };
 
-// Pure generation, using all generated rooms at full visibility, never the reveal state.
+// Pure generation, using all generated rooms at full visibility and all doors open, never the
+// reveal or door state.
 std::vector<WallPropInstance> Generate(const std::vector<WallRules::RoomView>& rooms, std::uint64_t seed,
                                      const std::vector<WallPropDefinition>& catalog = GetWallPropDefinitions(),
                                      GenerationSettings settings = {});
