@@ -10,11 +10,11 @@
 EM_ASYNC_JS(void, WaitForAnimationFrame, (), {
     await new Promise(resolve => requestAnimationFrame(resolve));
 });
-#endif
-
+#else
 namespace {
 constexpr int kDesktopTargetFps = 60;
 }
+#endif
 
 namespace GameWindow {
 

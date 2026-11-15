@@ -535,7 +535,11 @@ $(TEST_BIN): tests/inventory_rules_tests.cpp src/inventory_rules.cpp src/invento
 # Project target defined by PROJECT_NAME
 $(PROJECT_NAME): $(OBJS) raylib_build
 ifeq ($(PLATFORM),PLATFORM_WEB)
+ifeq ($(OS),Windows_NT)
+	@cmd /C "if not exist $(WEB_OUTPUT_DIR) mkdir $(WEB_OUTPUT_DIR)"
+else
 	@mkdir -p "$(WEB_OUTPUT_DIR)"
+endif
 endif
 	$(CC) -o $(GAME_OUTPUT) $(OBJS) $(WINDOWS_RESOURCE) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
