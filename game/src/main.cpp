@@ -385,7 +385,7 @@ bool ClipCorridorMaskBehindDoor(Direction direction,
 
 // Retorna a cor final utilizada ao desenhar a máscara de corredor com o alfa desejado.
 Color DoorMaskColor(float alpha) {
-    Color color{24, 26, 33, 255};
+    Color color = VOID_COLOR;
     color.a = static_cast<unsigned char>(std::clamp(alpha, 0.0f, 1.0f) * 255.0f);
     return color;
 }
@@ -2115,7 +2115,7 @@ int main() {
         renderCamera.target = snappedPlayerPosition;
 
         BeginDrawing();
-        ClearBackground(Color{24, 26, 33, 255});
+        ClearBackground(VOID_COLOR);
 
         BeginMode2D(renderCamera);
         std::vector<FloorRoomView> floorRooms;

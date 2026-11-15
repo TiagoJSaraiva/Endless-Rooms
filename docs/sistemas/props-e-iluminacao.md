@@ -210,6 +210,16 @@ desenhadas: a parede translúcida (60%) deixa passar 40% da luz de trás; por
 fim entram as `BottomWall`, que continuam iluminando a própria parede. O alpha
 do mapa de luz é preservado nesse passe, porque o multiplicativo final o usa.
 
+O rodapé da parede inferior (últimos 32 px) se dissolve na cor do vazio
+(`VOID_COLOR`, em `room_types.h`, a mesma do fundo e da máscara dos corredores).
+`WallTiles` desenha o degradê no fim do passe frontal, com a mesma opacidade da
+parede, e o estende às faixas laterais que terminam junto dela (cantos e
+acabamentos). Faixas que seguem para baixo, como as paredes de um corredor ao
+sul, não ganham rodapé, e o rodapé da parede inferior para antes delas. O mapa
+de luz recebe o mesmo degradê até o nível ambiente (oclusor `fadesDown`, depois
+de todas as fontes), para que a base termine idêntica ao vazio mesmo junto de
+uma tocha.
+
 `SceneLighting::Apply` aceita fontes adicionais `SceneLightSource`, com
 posição global, configuração de luz, visibilidade e retângulo de recorte.
 As fontes de parede usam o mesmo recorte da sala ou do corredor anfitrião

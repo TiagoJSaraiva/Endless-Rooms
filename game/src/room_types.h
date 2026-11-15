@@ -1,10 +1,14 @@
 #pragma once
 
+#include "raylib.h"
+
 #include <cstdint>
 #include <functional>
 
 // Tamanho de cada tile em pixels no mapa.
 constexpr int TILE_SIZE = 64;
+// Cor do vazio entre salas: fundo da cena, máscara de corredores e rodapé das paredes inferiores.
+constexpr Color VOID_COLOR{24, 26, 33, 255};
 // Largura padrão usada ao gerar portas.
 constexpr int DOOR_WIDTH_TILES = 2;
 

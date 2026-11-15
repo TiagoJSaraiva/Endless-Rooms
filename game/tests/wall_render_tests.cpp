@@ -229,7 +229,35 @@ void TestTwoTileWallRendering(RenderTexture2D target) {
     ExpectPixelColor(full, 3 * TILE_SIZE + 32, 6 * TILE_SIZE + 32, BLACK);
     ExpectPixelColor(full, 6 * TILE_SIZE + 32,
                      6 * TILE_SIZE + TILE_SIZE / 2, BLACK);
+    // Rodapé: a base da parede inferior e do canto lateral se dissolve na cor do vazio;
+    // acima dos últimos 32 px nada muda.
+    const int floorBottomY = 6 * TILE_SIZE;
+    ExpectPixelColor(full, 3 * TILE_SIZE + 32, floorBottomY - 1, VOID_COLOR);
+    ExpectPixelColor(full, leftEdgeX - 8, floorBottomY - 1, VOID_COLOR);
+    ExpectPixelColor(full, 3 * TILE_SIZE + 32, floorBottomY - TILE_SIZE / 2 - 2, bottom);
+    ExpectPixelColor(full, leftEdgeX - 8, floorBottomY - TILE_SIZE / 2 - 2, side);
+    const Color midFade = GetImageColor(full, 3 * TILE_SIZE + 32, floorBottomY - TILE_SIZE / 4);
+    assert(midFade.g < bottom.g - 20 && midFade.g > VOID_COLOR.g + 20);
     UnloadImage(full);
+
+    // Porta sul aberta entre paredes inferiores de 2 tiles: as paredes ganham rodapé, mas os
+    // acabamentos laterais da boca continuam na parede do corredor e não esmaecem.
+    Room southRoom = MakeRoom({0, 3}, BiomeType::Cave, 2, 8, 6, 2);
+    auto southState = std::make_shared<DoorInstance>();
+    southState->open = true;
+    Doorway southDoor;
+    southDoor.direction = Direction::South;
+    southDoor.offset = 2;
+    southDoor.width = 2;
+    southDoor.corridorTiles = TileRect{4, 10, 2, 2};
+    southDoor.doorState = southState;
+    southRoom.Layout().doors.push_back(southDoor);
+    Image south = Render(walls, {{&southRoom, 1.0f}}, target, true);
+    const int southFloorBottomY = 10 * TILE_SIZE;
+    ExpectPixelColor(south, 2 * TILE_SIZE + 32, southFloorBottomY - 1, VOID_COLOR);
+    ExpectPixelColor(south, 4 * TILE_SIZE - 8, southFloorBottomY - 1,
+                     GetImageColor(south, 4 * TILE_SIZE - 8, southFloorBottomY - TILE_SIZE / 2 - 2));
+    UnloadImage(south);
 
     Room alignedRoom = MakeRoom({1, 0}, BiomeType::Cave, 12, 2, 4, 4);
     const std::vector<WallRules::RoomView> views{{&room, 1.0f}, {&alignedRoom, 1.0f}};
@@ -292,13 +320,14 @@ void TestTwoTileWallRendering(RenderTexture2D target) {
     };
     Image corridorEntering = RenderWithPlayer(walls, corridorViews, target, playerInCorridor, 0.1f);
     ExpectColor(corridorEntering, 15, 3, bottom, 0.8f);
+    // Acima do rodapé (últimos 32 px), que se dissolve no vazio.
     ExpectPixelColor(corridorEntering, 13 * TILE_SIZE + 8,
-                     3 * TILE_SIZE + 32, side);
+                     3 * TILE_SIZE + 16, side);
     UnloadImage(corridorEntering);
     Image corridorFaded = RenderWithPlayer(walls, corridorViews, target, playerInCorridor, 0.1f);
     ExpectColor(corridorFaded, 15, 3, bottom, 0.6f);
     ExpectPixelColor(corridorFaded, 13 * TILE_SIZE + 8,
-                     3 * TILE_SIZE + 32, side);
+                     3 * TILE_SIZE + 16, side);
     UnloadImage(corridorFaded);
 }
 
@@ -473,7 +502,8 @@ void TestWallCatalogsAndLayers(RenderTexture2D target) {
     const int eastUpperWallTopY = TILE_SIZE / 2;
     const int eastWallMiddleY = TILE_SIZE + TILE_SIZE / 2;
     const int eastBottomWallTopY = 2 * TILE_SIZE + TILE_SIZE / 2;
-    const int eastLowerY = 3 * TILE_SIZE + TILE_SIZE / 2;
+    // Fileira de baixo da parede, acima do rodapé que se dissolve no vazio (últimos 32 px).
+    const int eastLowerY = 3 * TILE_SIZE + TILE_SIZE / 4;
     Image closedEast = Render(walls, {{&horizontalEast, 1.0f}}, target, true);
     const Color closedEastUpper = GetImageColor(closedEast, eastUpperX, eastUpperWallTopY);
     const Color closedEastUpperMiddle = GetImageColor(closedEast, eastUpperX, eastWallMiddleY);

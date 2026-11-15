@@ -4,6 +4,7 @@
 #include "room_types.h"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <random>
@@ -17,6 +18,10 @@ constexpr const char* kSectionDirectories[] = {"side", "upper", "bottom", "edge"
 constexpr std::size_t kCatalogsPerBiome = 4;
 constexpr float kOccludedBottomWallVisibility = 0.6f;
 constexpr float kBottomWallTweenDuration = 0.2f;
+// Altura do rodapé da parede inferior que se dissolve no vazio.
+constexpr float kFooterFadeHeight = TILE_SIZE * 0.5f;
+// Bordas calculadas de tiles inteiros; a folga só absorve arredondamento.
+constexpr float kEdgeTolerance = 0.5f;
 
 std::size_t BiomeIndex(BiomeType biome) {
     switch (biome) {
@@ -301,22 +306,95 @@ float WallTiles::ForegroundVisibility(const WallRules::Segment& segment,
     return segment.visibility * tween->second.visibility;
 }
 
+std::vector<WallTiles::FooterFade> WallTiles::FooterFades(
+    const std::vector<WallRules::Module>& modules, bool useBottomWallTweens) const {
+    std::vector<Rectangle> bottomWalls;
+    std::vector<Rectangle> sideWalls;
+    for (const auto& module : modules) {
+        const Rectangle bounds = WallRules::ModuleBounds(module);
+        if (module.segment.section == WallRules::Section::Bottom) bottomWalls.push_back(bounds);
+        else if (module.segment.section == WallRules::Section::Side) sideWalls.push_back(bounds);
+    }
+    const auto bottomOf = [](Rectangle r) { return r.y + r.height; };
+    // Encostar conta como vizinhança (canto lateral junto da parede inferior).
+    const auto touchesX = [](Rectangle a, Rectangle b) {
+        return a.x <= b.x + b.width + kEdgeTolerance && b.x <= a.x + a.width + kEdgeTolerance;
+    };
+    // Faixas laterais que seguem para baixo (parede de corredor ao sul) não têm rodapé.
+    std::vector<Rectangle> continuingSides;
+    for (const auto& side : sideWalls) {
+        for (const auto& below : sideWalls) {
+            if (std::abs(below.y - bottomOf(side)) < kEdgeTolerance && touchesX(below, side)) {
+                continuingSides.push_back(side);
+                break;
+            }
+        }
+    }
+    const auto continues = [&](Rectangle bounds) {
+        for (const auto& side : continuingSides)
+            if (side.x == bounds.x && side.y == bounds.y) return true;
+        return false;
+    };
+
+    std::vector<FooterFade> fades;
+    for (const auto& module : modules) {
+        const Rectangle bounds = WallRules::ModuleBounds(module);
+        const float height = std::min(kFooterFadeHeight, bounds.height);
+        Rectangle strip{bounds.x, bottomOf(bounds) - height, bounds.width, height};
+        if (module.segment.section == WallRules::Section::Side) {
+            // Cantos e acabamentos laterais que terminam junto de uma parede inferior somem com ela.
+            bool endsWithBottomWall = false;
+            for (const auto& wall : bottomWalls)
+                if (std::abs(bottomOf(wall) - bottomOf(bounds)) < kEdgeTolerance && touchesX(wall, bounds))
+                    endsWithBottomWall = true;
+            if (!endsWithBottomWall || continues(bounds)) continue;
+        } else if (module.segment.section == WallRules::Section::Bottom) {
+            // Acabamentos que seguem para o corredor ficam sobre a ponta da parede inferior:
+            // o rodapé dela para antes deles, senão os cobriria.
+            for (const auto& side : continuingSides) {
+                const float left = strip.x;
+                const float right = strip.x + strip.width;
+                if (side.x >= right || side.x + side.width <= left) continue;
+                const bool atLeftEnd = side.x + side.width * 0.5f < (left + right) * 0.5f;
+                if (atLeftEnd) {
+                    strip.x = side.x + side.width;
+                    strip.width = right - strip.x;
+                } else {
+                    strip.width = side.x - left;
+                }
+            }
+            if (strip.width <= 0.0f) continue;
+        } else {
+            continue;
+        }
+        const float visibility = ForegroundVisibility(module.segment, useBottomWallTweens);
+        if (visibility <= 0.0f) continue;
+        fades.push_back({strip, visibility});
+    }
+    return fades;
+}
+
 std::vector<LightingRules::LightOccluder> WallTiles::ForegroundLightOccluders(
     const std::vector<WallRules::RoomView>& rooms) const {
     std::vector<LightingRules::LightOccluder> occluders;
-    for (const auto& module : WallRules::BuildModules(WallRules::BuildFrame(rooms))) {
+    const auto modules = WallRules::BuildModules(WallRules::BuildFrame(rooms));
+    for (const auto& module : modules) {
         if (!DrawsInForeground(module.segment)) continue;
         const float opacity = ForegroundVisibility(module.segment, true);
         if (opacity <= 0.0f) continue;
         occluders.push_back({WallRules::ModuleBounds(module), opacity});
+    }
+    for (const auto& fade : FooterFades(modules, true)) {
+        occluders.push_back({fade.strip, fade.visibility, true});
     }
     return occluders;
 }
 
 void WallTiles::Draw(const WallRules::Frame& frame, bool foreground,
                      bool useBottomWallTweens) const {
+    const auto allModules = WallRules::BuildModules(frame);
     std::vector<WallRules::Module> modules;
-    for (const auto& module : WallRules::BuildModules(frame)) {
+    for (const auto& module : allModules) {
         if (DrawsInForeground(module.segment) == foreground) {
             modules.push_back(module);
         }
@@ -363,6 +441,16 @@ void WallTiles::Draw(const WallRules::Frame& frame, bool foreground,
         const Rectangle destination = WallRules::ModuleBounds(module);
         DrawTexturePro(texture, source, destination, Vector2{0.0f, 0.0f}, 0.0f,
                        ColorAlpha(WHITE, segment.visibility));
+    }
+
+    if (!foreground) return;
+    // O rodapé vem depois de todas as paredes para também cobrir as faixas laterais dos cantos,
+    // desenhadas no passe de fundo.
+    for (const auto& fade : FooterFades(allModules, useBottomWallTweens)) {
+        const Rectangle& strip = fade.strip;
+        DrawRectangleGradientV(static_cast<int>(strip.x), static_cast<int>(strip.y),
+                               static_cast<int>(strip.width), static_cast<int>(strip.height),
+                               ColorAlpha(VOID_COLOR, 0.0f), ColorAlpha(VOID_COLOR, fade.visibility));
     }
 }
 

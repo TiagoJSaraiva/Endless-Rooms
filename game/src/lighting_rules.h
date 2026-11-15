@@ -41,9 +41,12 @@ Rectangle HostLightClip(const TileRect& hostTiles, bool includeSideWalls);
 
 // Área do mundo que esconde a luz vinda de dentro da sala (a face visível da parede inferior).
 // opacity acompanha a opacidade da parede: 0,6 deixa passar 40% da luz de trás.
+// fadesDown: rodapé que se dissolve no vazio; vai de sem efeito no topo a opacity na base e
+// vale depois de todas as fontes, para que a base termine no mesmo nível do vazio.
 struct LightOccluder {
     Rectangle bounds{};
     float opacity{1.0f};
+    bool fadesDown{false};
 };
 
 } // namespace LightingRules

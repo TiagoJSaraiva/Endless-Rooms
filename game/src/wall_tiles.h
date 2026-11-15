@@ -21,7 +21,8 @@ public:
     void DrawForeground(const std::vector<WallRules::RoomView>& rooms,
                         Rectangle playerBounds, float deltaSeconds) const;
     // Paredes do passe frontal (inferiores e seus acabamentos laterais) com a opacidade em que
-    // foram desenhadas. Chamar depois de DrawForeground com o jogador, que atualiza a translucidez.
+    // foram desenhadas, mais os rodapés que se dissolvem no vazio (fadesDown).
+    // Chamar depois de DrawForeground com o jogador, que atualiza a translucidez.
     std::vector<LightingRules::LightOccluder> ForegroundLightOccluders(
         const std::vector<WallRules::RoomView>& rooms) const;
     void Unload();
@@ -46,6 +47,14 @@ private:
     void DrawFallback(const WallRules::Module& module) const;
     // Visibilidade da revelação combinada com a translucidez da fileira inferior, se houver.
     float ForegroundVisibility(const WallRules::Segment& segment, bool useBottomWallTweens) const;
+
+    // Faixa da base de uma parede que se dissolve na cor do vazio.
+    struct FooterFade {
+        Rectangle strip;
+        float visibility;
+    };
+    std::vector<FooterFade> FooterFades(const std::vector<WallRules::Module>& modules,
+                                        bool useBottomWallTweens) const;
 
     std::array<Catalog, 16> catalogs_{};
     mutable WallRules::TileMemory memory_;

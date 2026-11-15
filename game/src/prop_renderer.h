@@ -56,7 +56,7 @@ public:
     // Called in screen space, after world drawing and before prompts/HUD.
     // ambientLevel (LightingRules) escurece a tela inteira; rooms só fornecem as luzes dos props.
     // occluders (em pixels de mundo) voltam ao nível ambiente depois das fontes Interior e antes
-    // das BottomWall; os valores só precisam valer durante a chamada.
+    // das BottomWall; os de rodapé (fadesDown) depois de todas. Só precisam valer durante a chamada.
     void Apply(float ambientLevel, const std::vector<FloorRoomView>& rooms, Camera2D camera, PropRenderer& props, float elapsedSeconds,
                const RenderTexture2D* output = nullptr, const std::vector<SceneLightSource>& additionalLights = {},
                const std::vector<LightingRules::LightOccluder>& occluders = {});

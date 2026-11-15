@@ -159,16 +159,26 @@ void SceneLighting::Apply(float ambientLevel,const std::vector<FloorRoomView>& r
     // A face da parede inferior fica na frente da luz de dentro da sala: devolve o nível ambiente
     // a ela, misturado pela opacidade para que a parede translúcida deixe passar parte da luz.
     // O alpha do mapa precisa continuar 1, porque o passe multiplicativo final o usa.
-    rlSetBlendFactorsSeparate(RL_SRC_ALPHA,RL_ONE_MINUS_SRC_ALPHA,RL_ZERO,RL_ONE,RL_FUNC_ADD,RL_FUNC_ADD);
-    BeginBlendMode(BLEND_CUSTOM_SEPARATE);
-    for(const auto& occluder:occluders) {
-        const float opacity=std::clamp(occluder.opacity,0.0f,1.0f);
-        if(opacity<=0) continue;
-        DrawRectangleRec(WorldToScreenRect(occluder.bounds,camera),
-                         {value,value,value,static_cast<unsigned char>(std::round(255*opacity))});
-    }
-    EndBlendMode();
+    auto drawOccluders=[&](bool fadesDown) {
+        rlSetBlendFactorsSeparate(RL_SRC_ALPHA,RL_ONE_MINUS_SRC_ALPHA,RL_ZERO,RL_ONE,RL_FUNC_ADD,RL_FUNC_ADD);
+        BeginBlendMode(BLEND_CUSTOM_SEPARATE);
+        for(const auto& occluder:occluders) {
+            const float opacity=std::clamp(occluder.opacity,0.0f,1.0f);
+            if(occluder.fadesDown!=fadesDown||opacity<=0) continue;
+            const Rectangle rect=WorldToScreenRect(occluder.bounds,camera);
+            const Color solid{value,value,value,static_cast<unsigned char>(std::round(255*opacity))};
+            if(fadesDown) {
+                DrawRectangleGradientV(int(std::floor(rect.x)),int(std::floor(rect.y)),int(std::ceil(rect.width)),
+                                       int(std::ceil(rect.height)),{value,value,value,0},solid);
+            } else {
+                DrawRectangleRec(rect,solid);
+            }
+        }
+        EndBlendMode();
+    };
+    drawOccluders(false);
     drawLayer(LightLayer::BottomWall);
+    drawOccluders(true);
     EndTextureMode();
     if(output) BeginTextureMode(*output);
     BeginBlendMode(BLEND_MULTIPLIED);
