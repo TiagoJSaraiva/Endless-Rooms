@@ -48,6 +48,7 @@
 #include "enemy_rules.h"
 #include "debug_console.h"
 #include "station_persistence.h"
+#include "game_window.h"
 
 namespace {
 
@@ -1055,12 +1056,7 @@ bool ShouldTransitionThroughDoor(const Doorway& door, const Vector2& position, c
 
 // Loop principal do jogo: inicializa Raylib, controla estados das salas, jogador e UI.
 int main() {
-    SetConfigFlags(FLAG_WINDOW_UNDECORATED | FLAG_WINDOW_TOPMOST | FLAG_VSYNC_HINT);
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Prototype - Room Generation");
-    const int monitorIndex = GetCurrentMonitor();
-    const Vector2 monitorPosition = GetMonitorPosition(monitorIndex);
-    SetWindowPosition(static_cast<int>(monitorPosition.x), static_cast<int>(monitorPosition.y));
-    SetTargetFPS(60);
+    GameWindow::Open(SCREEN_WIDTH, SCREEN_HEIGHT, "Endless Rooms");
     LoadGameFont("assets/font/alagard.ttf", 32);
 
     std::uint64_t worldSeed = GenerateWorldSeed();
@@ -1204,7 +1200,7 @@ int main() {
 
     BeginNewRun(false);
 
-    while (!WindowShouldClose()) {
+    while (GameWindow::NextFrame()) {
         const float delta = GetFrameTime();
         propAnimationTime += delta;
         if (!playerDead) {

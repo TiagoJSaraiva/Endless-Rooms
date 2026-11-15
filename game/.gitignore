@@ -1,6 +1,7 @@
 *.exe
 *.dsym
 /obj*/
+/build-web/
 /tests/inventory_rules_tests
 /tests/floor_rules_tests
 /tests/floor_render_tests

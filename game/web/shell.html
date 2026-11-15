@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Endless Rooms</title>
+    <meta name="description" content="Endless Rooms: a 2D action roguelite made with C++17 and raylib.">
+    <style>
+        :root {
+            --bg: #0b0a0d;
+            --panel: #16131a;
+            --text: #e6dfd3;
+            --muted: #9a8f80;
+            --accent: #d9a441;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+        }
+        #stage {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* The game renders at a fixed 1920x1080; CSS scales it to fit while keeping 16:9. */
+        #canvas {
+            display: block;
+            width: min(100vw, calc(100vh * 16 / 9));
+            height: min(100vh, calc(100vw * 9 / 16));
+            background: #000;
+            outline: none;
+            image-rendering: pixelated;
+        }
+        #overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            background: var(--bg);
+            transition: opacity 0.4s ease;
+        }
+        #overlay.hidden { opacity: 0; pointer-events: none; }
+        #overlay.ready { cursor: pointer; }
+        #overlay.ready #status { color: var(--accent); font-size: 18px; }
+        #overlay h1 {
+            margin: 0;
+            font-size: clamp(28px, 6vw, 56px);
+            letter-spacing: 0.08em;
+            color: var(--accent);
+        }
+        #status { color: var(--muted); font-size: 15px; min-height: 1.2em; }
+        #progress {
+            width: min(320px, 70vw);
+            height: 6px;
+            background: var(--panel);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        #progress-bar { width: 0; height: 100%; background: var(--accent); transition: width 0.2s; }
+        #controls {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.7;
+            text-align: center;
+        }
+        kbd {
+            padding: 1px 6px;
+            border: 1px solid #3a3340;
+            border-radius: 4px;
+            background: var(--panel);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 13px;
+        }
+        #fullscreen {
+            position: fixed;
+            right: 12px;
+            bottom: 12px;
+            padding: 6px 12px;
+            border: 1px solid #3a3340;
+            border-radius: 6px;
+            background: rgba(22, 19, 26, 0.8);
+            color: var(--text);
+            font: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+        #fullscreen:hover { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div id="stage">
+        <canvas id="canvas" tabindex="-1"></canvas>
+    </div>
+    <div id="overlay">
+        <h1>ENDLESS ROOMS</h1>
+        <div id="progress"><div id="progress-bar"></div></div>
+        <div id="status">Loading…</div>
+        <div id="controls">
+            <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> move &nbsp;·&nbsp;
+            <kbd>Left</kbd> / <kbd>Right</kbd> click attack<br>
+            <kbd>E</kbd> interact &nbsp;·&nbsp; <kbd>Tab</kbd> inventory &nbsp;·&nbsp;
+            <kbd>1</kbd>–<kbd>5</kbd> equipment abilities
+        </div>
+    </div>
+    <button id="fullscreen" type="button">Fullscreen</button>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const overlay = document.getElementById('overlay');
+        const statusEl = document.getElementById('status');
+        const progressBar = document.getElementById('progress-bar');
+
+        // Right click is the off-hand attack, so the browser menu must not open over the game.
+        canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+        canvas.addEventListener('mousedown', () => canvas.focus());
+
+        document.getElementById('fullscreen').addEventListener('click', () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                document.getElementById('stage').requestFullscreen();
+            }
+            canvas.focus();
+        });
+
+        var Module = {
+            canvas: canvas,
+            print: (text) => console.log(text),
+            printErr: (text) => console.warn(text),
+            setStatus: (text) => {
+                if (!text) return;
+                // Emscripten reports "Downloading data... (loaded/total)".
+                const match = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+                if (match) {
+                    statusEl.textContent = 'Loading assets…';
+                    progressBar.style.width = (100 * parseInt(match[2]) / parseInt(match[4])) + '%';
+                } else {
+                    statusEl.textContent = text;
+                }
+            },
+            monitorRunDependencies: (left) => {
+                if (left === 0) progressBar.style.width = '100%';
+            },
+            onRuntimeInitialized: () => {
+                // The game starts in the safe lobby; the click also gives the canvas keyboard focus.
+                statusEl.textContent = 'Click to play';
+                overlay.classList.add('ready');
+                overlay.addEventListener('click', () => {
+                    overlay.classList.add('hidden');
+                    canvas.focus();
+                }, { once: true });
+            },
+        };
+
+        window.addEventListener('error', () => {
+            statusEl.textContent = 'Something went wrong. Check the browser console for details.';
+        });
+    </script>
+    {{{ SCRIPT }}}
+</body>
+</html>

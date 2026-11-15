@@ -140,14 +140,11 @@ ifeq ($(PLATFORM),PLATFORM_RPI)
 endif
 
 ifeq ($(PLATFORM),PLATFORM_WEB)
-    # Emscripten required variables
-    EMSDK_PATH          ?= C:/emsdk
-    EMSCRIPTEN_VERSION  ?= 1.38.31
-    CLANG_VERSION       = e$(EMSCRIPTEN_VERSION)_64bit
-    PYTHON_VERSION      = 2.7.13.1_64bit\python-2.7.13.amd64
-    NODE_VERSION        = 8.9.1_64bit
-    export PATH         := $(EMSDK_PATH);$(EMSDK_PATH)\clang\$(CLANG_VERSION);$(EMSDK_PATH)\node\$(NODE_VERSION)\bin;$(EMSDK_PATH)\python\$(PYTHON_VERSION);$(EMSDK_PATH)\emscripten\$(EMSCRIPTEN_VERSION);$(PATH)
-    EMSCRIPTEN          = $(EMSDK_PATH)\emscripten\$(EMSCRIPTEN_VERSION)
+    # Build web: exige o emsdk ativado no PATH (emcc, em++, emar), como no CI.
+    RAYLIB_CC  = emcc
+    RAYLIB_AR  = emar
+    # A página sai pronta para o GitHub Pages (index.html, .js, .wasm e .data).
+    WEB_OUTPUT_DIR ?= build-web
 endif
 
 # Define raylib release directory for compiled library.
@@ -188,10 +185,8 @@ ifeq ($(PLATFORM),PLATFORM_RPI)
     endif
 endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
-    # HTML5 emscripten compiler
-    # WARNING: To compile to HTML5, code must be redesigned 
-    # to use emscripten.h and emscripten_set_main_loop()
-    CC = emcc
+    # HTML5 emscripten compiler (C++); o loop bloqueante roda via ASYNCIFY (ver game_window.cpp)
+    CC = em++
 endif
 
 # Define default make program: Mingw32-make
@@ -202,6 +197,11 @@ ifeq ($(PLATFORM),PLATFORM_DESKTOP)
         MAKE = make
     endif
     ifeq ($(PLATFORM_OS),OSX)
+        MAKE = make
+    endif
+endif
+ifeq ($(PLATFORM),PLATFORM_WEB)
+    ifneq ($(OS),Windows_NT)
         MAKE = make
     endif
 endif
@@ -221,9 +221,16 @@ WINDOWS_RESOURCE =
 
 ifeq ($(BUILD_MODE),DEBUG)
     CFLAGS += -g -O0 -DENDLESS_DEBUG_DIAGNOSTICS
+else ifeq ($(PLATFORM),PLATFORM_WEB)
+    # No emcc "-s" é prefixo de opção (-sSETTING), não strip; o -O2 já descarta símbolos.
+    CFLAGS += -O2
 else
     CFLAGS += -s -O1
 endif
+
+# PORTABLE=TRUE gera o executável distribuído na release do Windows:
+# runtime C++ estático (sem DLLs do MinGW ao lado) e sem janela de console.
+PORTABLE ?= FALSE
 
 # Additional flags for compiler (if desired)
 #CFLAGS += -Wextra -Wmissing-prototypes -Wstrict-prototypes
@@ -232,6 +239,9 @@ ifeq ($(PLATFORM),PLATFORM_DESKTOP)
         # resource file contains windows executable icon and properties
         # -Wl,--subsystem,windows hides the console window
         WINDOWS_RESOURCE = $(RAYLIB_PATH)/src/raylib.rc.data
+        ifeq ($(PORTABLE),TRUE)
+            CFLAGS += -static -Wl,--subsystem,windows
+        endif
     endif
     ifeq ($(PLATFORM_OS),LINUX)
         ifeq ($(RAYLIB_LIBTYPE),STATIC)
@@ -247,27 +257,8 @@ ifeq ($(PLATFORM),PLATFORM_RPI)
     CFLAGS += -std=gnu99
 endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
-    # -Os                        # size optimization
-    # -O2                        # optimization level 2, if used, also set --memory-init-file 0
-    # -s USE_GLFW=3              # Use glfw3 library (context/input management)
-    # -s ALLOW_MEMORY_GROWTH=1   # to allow memory resizing -> WARNING: Audio buffers could FAIL!
-    # -s TOTAL_MEMORY=16777216   # to specify heap memory size (default = 16MB)
-    # -s USE_PTHREADS=1          # multithreading support
-    # -s WASM=0                  # disable Web Assembly, emitted by default
-    # -s EMTERPRETIFY=1          # enable emscripten code interpreter (very slow)
-    # -s EMTERPRETIFY_ASYNC=1    # support synchronous loops by emterpreter
-    # -s FORCE_FILESYSTEM=1      # force filesystem to load/save files data
-    # -s ASSERTIONS=1            # enable runtime checks for common memory allocation errors (-O1 and above turn it off)
-    # --profiling                # include information for code profiling
-    # --memory-init-file 0       # to avoid an external memory initialization code file (.mem)
-    # --preload-file resources   # specify a resources folder for data compilation
-    CFLAGS += -Os -s USE_GLFW=3 -s TOTAL_MEMORY=16777216 --preload-file resources
-    ifeq ($(BUILD_MODE), DEBUG)
-        CFLAGS += -s ASSERTIONS=1 --profiling
-    endif
-
-    # Define a custom shell .html and output extension
-    CFLAGS += --shell-file $(RAYLIB_PATH)/src/shell.html
+    # O console de debug usa try/catch na leitura de números.
+    CFLAGS += -fexceptions
     EXT = .html
 endif
 
@@ -314,6 +305,17 @@ endif
 
 ifeq ($(PLATFORM),PLATFORM_RPI)
     LDFLAGS += -L/opt/vc/lib
+endif
+
+ifeq ($(PLATFORM),PLATFORM_WEB)
+    # Opções só de link do build web:
+    #  ASYNCIFY + IGNORE_INDIRECT: só main() e GameWindow::NextFrame suspendem, por chamadas
+    #    diretas, o que mantém baixo o custo do ASYNCIFY; a pilha dele guarda os locais de main().
+    #  STACK_SIZE: main() tem muitos locais; o padrão do emscripten (64 KB) é pequeno demais.
+    #  --preload-file: assets/ vira o sistema de arquivos virtual, com os mesmos caminhos relativos.
+    LDFLAGS += -sUSE_GLFW=3 -sASYNCIFY -sASYNCIFY_IGNORE_INDIRECT=1 -sASYNCIFY_STACK_SIZE=65536 \
+               -sSTACK_SIZE=8388608 -sINITIAL_MEMORY=134217728 -sALLOW_MEMORY_GROWTH=1 \
+               -fexceptions --preload-file assets --exclude-file '*.md' --shell-file web/shell.html
 endif
 
 # Define any libraries required on linking
@@ -370,7 +372,7 @@ ifeq ($(PLATFORM),PLATFORM_RPI)
 endif
 ifeq ($(PLATFORM),PLATFORM_WEB)
     # Libraries for web (HTML5) compiling
-    LDLIBS = $(RAYLIB_RELEASE_PATH)/libraylib.bc
+    LDLIBS = $(RAYLIB_RELEASE_PATH)/libraylib.a
 endif
 
 # Define a recursive wildcard function
@@ -379,6 +381,12 @@ rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst 
 # Define all source files required
 SRC_DIR = src
 OBJ_DIR = obj
+GAME_OUTPUT = $(PROJECT_NAME)$(EXT)
+ifeq ($(PLATFORM),PLATFORM_WEB)
+    # Objetos separados dos do desktop.
+    OBJ_DIR = obj-web
+    GAME_OUTPUT = $(WEB_OUTPUT_DIR)/index.html
+endif
 
 # Define all source and object files (C++)
 SRC = $(wildcard $(SRC_DIR)/*.cpp)
@@ -526,7 +534,10 @@ $(TEST_BIN): tests/inventory_rules_tests.cpp src/inventory_rules.cpp src/invento
 
 # Project target defined by PROJECT_NAME
 $(PROJECT_NAME): $(OBJS) raylib_build
-	$(CC) -o $(PROJECT_NAME)$(EXT) $(OBJS) $(WINDOWS_RESOURCE) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
+ifeq ($(PLATFORM),PLATFORM_WEB)
+	@mkdir -p "$(WEB_OUTPUT_DIR)"
+endif
+	$(CC) -o $(GAME_OUTPUT) $(OBJS) $(WINDOWS_RESOURCE) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
 # Compile source files
 # NOTE: This pattern will compile every module defined on $(OBJS)
@@ -549,6 +560,8 @@ ifeq ($(OS),Windows_NT)
 clean:
 	@cmd /C "if exist $(OBJ_DIR)\*.o del /Q $(OBJ_DIR)\*.o"
 	@cmd /C "if exist $(PROJECT_NAME)$(EXT) del /Q $(PROJECT_NAME)$(EXT)"
+	@cmd /C "if exist obj-web rmdir /S /Q obj-web"
+	@cmd /C "if exist build-web rmdir /S /Q build-web"
 	@cmd /C "if exist tests\inventory_rules_tests$(EXT) del /Q tests\inventory_rules_tests$(EXT)"
 	@cmd /C "if exist tests\floor_rules_tests$(EXT) del /Q tests\floor_rules_tests$(EXT)"
 	@cmd /C "if exist tests\floor_render_tests$(EXT) del /Q tests\floor_render_tests$(EXT)"
@@ -586,6 +599,7 @@ clean:
 else
 clean:
 	$(RM) -f $(WALL_PROP_RULES_TEST_BIN) $(WALL_PROP_RENDER_TEST_BIN) $(PROJECTILE_LIFETIME_TEST_BIN) $(PROJECTILE_WALL_TEST_BIN) $(LIGHTING_RULES_TEST_BIN) $(RUN_STATS_TEST_BIN) $(DEBUG_CONFIG_TEST_BIN) $(ECONOMY_TEST_BIN) $(WEAPON_RULES_TEST_BIN) $(ENEMY_RULES_TEST_BIN) $(BODY_RULES_TEST_BIN) $(DOOR_VISUAL_RULES_TEST_BIN)
+	$(RM) -rf obj-web build-web
 	$(RM) -f $(OBJ_DIR)/*.o $(PROJECT_NAME)$(EXT) $(TEST_BIN) $(FLOOR_TEST_BIN) $(FLOOR_RENDER_TEST_BIN) $(WALL_TEST_BIN) $(WALL_RENDER_TEST_BIN) $(ROOM_GENERATION_TEST_BIN) $(ROOM_SIMULATION_TEST_BIN) $(ROOM_COLLISION_TEST_BIN) $(PROP_RULES_TEST_BIN) $(PROP_COMBAT_TEST_BIN) $(PROP_RENDER_TEST_BIN) $(PROP_GAMEPLAY_TEST_BIN) $(REWARD_POUCH_RULES_TEST_BIN) $(REWARD_POUCH_GAMEPLAY_TEST_BIN) $(REWARD_POUCH_RENDER_TEST_BIN) $(RAYLIB_SRC_PATH)/*.o $(RAYLIB_SRC_PATH)/libraylib.a $(RAYLIB_SRC_PATH)/libraylib.web.a $(RAYLIB_SRC_PATH)/raygui.c $(RAYLIB_SRC_PATH)/*-protocol.h $(RAYLIB_SRC_PATH)/*-protocol-code.h
 	@echo Cleaning project build outputs
 endif
