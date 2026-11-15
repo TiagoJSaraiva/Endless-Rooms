@@ -91,7 +91,7 @@ Na raiz do repositório, `scripts/check.ps1` executa toda a verificação: toolc
 | `game/src/*_renderer.cpp`, `ui_*.cpp`, `hud.cpp` | Desenho e interface |
 | `game/tests/` | Um executável de teste headless por domínio, mais os testes de renderização |
 | `game/assets/` | Sprites, tiles e fonte |
-| `game/web/shell.html` | A página web que hospeda o jogo |
+| `game/web/shell.html`, `game/web/assets/` | A página web que hospeda o jogo e a arte da tela de carregamento |
 | `game/vendor/raylib/`, `game/inc/` | Código de terceiros (raylib, raygui) |
 | `tools/sprites/` | Scripts Python que geram os sprites do cavaleiro e dos inimigos |
 | `docs/` | Arquitetura, notas de sistemas e decisões de projeto |

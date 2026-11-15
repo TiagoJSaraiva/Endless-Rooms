@@ -93,7 +93,7 @@ From the repository root, `scripts/check.ps1` runs the whole verification pipeli
 | `game/src/*_renderer.cpp`, `ui_*.cpp`, `hud.cpp` | Drawing and user interface |
 | `game/tests/` | One headless test executable per domain, plus render tests |
 | `game/assets/` | Sprites, tiles and font |
-| `game/web/shell.html` | The web page that hosts the game |
+| `game/web/shell.html`, `game/web/assets/` | The web page that hosts the game and its loading screen art |
 | `game/vendor/raylib/`, `game/inc/` | Third-party code (raylib, raygui) |
 | `tools/sprites/` | Python scripts that generate the knight and enemy sprites |
 | `docs/` | Architecture, system notes and design decisions (in Portuguese) |

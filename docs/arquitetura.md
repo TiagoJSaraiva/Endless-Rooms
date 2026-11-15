@@ -26,6 +26,7 @@ game/
   tests/                um executável de teste por domínio
   assets/               sprites e fonte (caminhos relativos a game/)
   web/shell.html        página que hospeda o build web
+  web/assets/           logo, barra e teclas da página (copiados para build-web/ com a fonte do jogo)
   inc/                  raygui.h e wrappers rlcpp (terceiros)
   vendor/raylib/        raylib 5.5 (terceiros; preservar licença)
   obj/                  objetos de build (local, não versionado)
@@ -60,7 +61,7 @@ Notas detalhadas por sistema ficam em [`sistemas/`](sistemas/README.md).
 - `scripts/check.ps1` encadeia tudo isso (decisão [0005](decisoes/0005-pipeline-de-verificacao.md)).
 - Os assets usam caminhos relativos a `assets/`; execute o binário com `game/` como diretório de trabalho.
 - `PORTABLE=TRUE` gera o exe autocontido (runtime estático, sem console) das releases.
-- `PLATFORM=PLATFORM_WEB` (com o emsdk ativado) gera `game/build-web/` com Emscripten e ASYNCIFY; `assets/` vai no `.data` com os mesmos caminhos. Deploy e releases pelo CI (decisão [0011](decisoes/0011-deploy-web-e-release-windows.md)).
+- `PLATFORM=PLATFORM_WEB` (com o emsdk ativado) gera `game/build-web/` com Emscripten e ASYNCIFY; `assets/` vai no `.data` com os mesmos caminhos; `web/assets/` e `alagard.ttf` são copiados soltos para `build-web/assets/` (alvo `web_page_assets`), porque a página os usa enquanto o `.data` baixa. Deploy e releases pelo CI (decisão [0011](decisoes/0011-deploy-web-e-release-windows.md)).
 
 ## Direção de evolução
 
