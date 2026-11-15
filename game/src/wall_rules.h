@@ -119,17 +119,8 @@ struct BottomWallRowIdHash {
 
 using Frame = std::unordered_map<Key, Segment, KeyHash>;
 
-// Como as paredes laterais dos corredores acompanham as portas.
-enum class CorridorSides : std::uint8_t {
-    // Surgem com a abertura da porta (desenho).
-    FollowDoors,
-    // Existem sempre, como se toda porta não selada estivesse aberta. A geração de props usa este
-    // modo para não depender do estado das portas no momento em que roda.
-    AllOpen
-};
-
 // Builds the union of visible room and open-corridor geometry, then emits its exposed walls.
-Frame BuildFrame(const std::vector<RoomView>& rooms, CorridorSides sideMode = CorridorSides::FollowDoors);
+Frame BuildFrame(const std::vector<RoomView>& rooms);
 
 // Groups compatible horizontal edges into 2x2 walls and regular side runs into 1x2 strips.
 // All side modules, including inset caps, span two tiles vertically.

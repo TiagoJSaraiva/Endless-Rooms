@@ -213,7 +213,7 @@ std::size_t BottomWallRowIdHash::operator()(const BottomWallRowId& id) const noe
     return static_cast<std::size_t>(hash);
 }
 
-Frame BuildFrame(const std::vector<RoomView>& rooms, CorridorSides sideMode) {
+Frame BuildFrame(const std::vector<RoomView>& rooms) {
     std::vector<RoomView> ordered;
     ordered.reserve(rooms.size());
     for (const auto& view : rooms) {
@@ -258,9 +258,7 @@ Frame BuildFrame(const std::vector<RoomView>& rooms, CorridorSides sideMode) {
                 corridorBiome = FloorRules::CorridorBiome(room.GetCoords(), room.GetBiome(),
                                                            target->first, target->second->GetBiome());
             }
-            const float sideProgress = sideMode == CorridorSides::AllOpen
-                ? 1.0f
-                : DoorVisualRules::OpenProgress(door.doorState.get());
+            const float sideProgress = DoorVisualRules::OpenProgress(door.doorState.get());
             const BottomWallRowId bottomWallRow{
                 BottomWallRowKind::Corridor, door.corridorTiles.x, door.corridorTiles.y,
                 door.corridorTiles.width, door.corridorTiles.height,

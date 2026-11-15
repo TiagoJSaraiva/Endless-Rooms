@@ -184,28 +184,11 @@ void SideTorches() {
     north.doorState = std::make_shared<DoorInstance>(); north.doorState->open = true;
     Doorway south = north; south.direction = Direction::South; south.targetCoords = lower.GetCoords();
     lower.Layout().doors.push_back(north); upper.Layout().doors.push_back(south);
-    const auto withOpenDoor = WallPropRules::Generate({{&lower, 1}, {&upper, 1}}, 7, GetWallPropDefinitions(), {1, 0, 1});
     int corridorSides = 0;
-    for (const auto& prop : withOpenDoor)
+    for (const auto& prop : WallPropRules::Generate({{&lower, 1}, {&upper, 1}}, 7, GetWallPropDefinitions(), {1, 0, 1}))
         if (prop.key.host.kind == WallRules::HostKind::Corridor && prop.key.section == WallRules::Section::Side)
             ++corridorSides;
     assert(corridorSides > 0);
-
-    // A geração roda quando salas novas surgem, em geral com a porta ainda fechada. O corredor
-    // precisa receber as mesmas tochas laterais, que só ficam visíveis quando a porta abre.
-    north.doorState->open = false;
-    const auto withClosedDoor = WallPropRules::Generate({{&lower, 1}, {&upper, 1}}, 7, GetWallPropDefinitions(), {1, 0, 1});
-    Equal(withOpenDoor, withClosedDoor);
-    auto visibleCorridorSides = [&] {
-        int count = 0;
-        for (const auto& view : WallPropRules::VisibleInstances(withClosedDoor, {{&lower, 1}, {&upper, 1}}))
-            if (view.prop->key.host.kind == WallRules::HostKind::Corridor &&
-                view.prop->key.section == WallRules::Section::Side) ++count;
-        return count;
-    };
-    assert(visibleCorridorSides() == 0);
-    north.doorState->open = true;
-    assert(visibleCorridorSides() == corridorSides);
 }
 
 // Prop de piso cujo sprite cobre a tocha lateral fica abaixo dela; um prop afastado não muda nada.

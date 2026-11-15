@@ -166,11 +166,7 @@ tiles. A arte olha para a direita (presa à parede oeste); na parede leste,
 `WallPropRules::GenerationSettings` centraliza chance, espaçamento e o fator de vizinhança. O RNG
 é independente do mapa, combate e props de chão. A geração usa todas as
 salas conhecidas com visibilidade plena e ordenação estável, sem depender
-da revelação ou ordem de entrada no mapa de salas. A moldura da geração trata
-toda porta não selada como aberta (`WallRules::CorridorSides::AllOpen`): as
-paredes laterais dos corredores existem desde o início, em vez de surgirem só
-com a abertura da porta, e um corredor vertical recebe as mesmas tochas
-laterais esteja a porta aberta ou fechada quando o registro é reconstruído.
+da revelação ou ordem de entrada no mapa de salas.
 
 O registro pertence a `RoomManager` e é reconstruído deterministicamente
 somente quando muda a revisão estrutural de salas/portas. Chamadas repetidas
@@ -308,9 +304,7 @@ Verificação manual em `game.exe`, iniciado de `game/`:
    corredores verticais: suporte encostado na parede, chama voltada para
    dentro, tamanho coerente com a tocha de cima, luz na sala certa e
    ordenação ao passar na frente e atrás delas; props de piso encostados
-   (vasos, barris) nunca as cobrem. Num corredor vertical recém-aberto, as
-   tochas laterais aparecem junto com a abertura da porta, antes de o
-   jogador entrar nele. A prévia
+   (vasos, barris) nunca as cobrem. A prévia
    `game/obj/side-torch-preview.png` (gerada por `test-wall-prop-render`)
    mostra o encaixe com os sprites reais.
 10. Junto à parede inferior de salas e corredores horizontais: a luz das
