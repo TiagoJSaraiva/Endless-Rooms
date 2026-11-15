@@ -1,0 +1,57 @@
+# Ao enviar uma tag v* (ex.: v1.0.0), compila o executável do Windows, roda os testes headless
+# e publica uma release com o zip jogável (exe autocontido + assets).
+name: Release Windows
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-make
+
+      - name: Build and test
+        shell: pwsh
+        run: |
+          # O MinGW do MSYS2 vem antes de outros toolchains da imagem do runner.
+          $env:PATH = "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin;$env:PATH"
+          mingw32-make -C game -j4 game PORTABLE=TRUE
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          mingw32-make -C game -j4 test
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $dist = "dist/EndlessRooms"
+          New-Item -ItemType Directory -Force $dist | Out-Null
+          Copy-Item game/game.exe "$dist/EndlessRooms.exe"
+          Copy-Item -Recurse game/assets "$dist/assets"
+          Get-ChildItem $dist -Recurse -Filter *.md | Remove-Item
+          Compress-Archive -Path $dist -DestinationPath "EndlessRooms-windows.zip"
+
+      - name: Publish release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $notes = @"
+          Windows build of Endless Rooms $tag.
+
+          Unzip the folder and run ``EndlessRooms.exe`` (keep the ``assets`` folder next to it).
+          Play in the browser: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+          "@
+          gh release create $tag EndlessRooms-windows.zip --title "Endless Rooms $tag" --notes $notes
