@@ -9,6 +9,9 @@ void Open(int width, int height, const char* title);
 
 // Chamada no início de cada volta do loop. Retorna false quando o jogo deve fechar.
 // No navegador devolve o controle à página até o próximo quadro e nunca pede para fechar.
-bool NextFrame();
+// noexcept é obrigatório na web: com -fexceptions, uma chamada que pode lançar sai de main()
+// por um invoke_* em JS, que o ASYNCIFY não atravessa; main() deixaria de ser instrumentada
+// e recomeçaria do zero a cada quadro (tela preta).
+bool NextFrame() noexcept;
 
 } // namespace GameWindow

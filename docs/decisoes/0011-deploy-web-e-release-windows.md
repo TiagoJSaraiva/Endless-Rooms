@@ -8,7 +8,7 @@ A demo precisa ser jogável sem instalar nada e também baixável para Windows. 
 
 ## Decisão
 - **Web**: o jogo é compilado com Emscripten (`make game PLATFORM=PLATFORM_WEB`, saída em `game/build-web/`) e publicado no GitHub Pages pelo workflow `deploy-web.yml` a cada push na `main`.
-- O loop bloqueante roda via **ASYNCIFY**: `GameWindow::NextFrame` (`game_window.cpp`) aguarda o `requestAnimationFrame` e devolve o controle ao navegador a cada quadro. `-sASYNCIFY_IGNORE_INDIRECT=1` limita a instrumentação às chamadas diretas `main` → `NextFrame`.
+- O loop bloqueante roda via **ASYNCIFY**: `GameWindow::NextFrame` (`game_window.cpp`) aguarda o `requestAnimationFrame` e devolve o controle ao navegador a cada quadro. `-sASYNCIFY_IGNORE_INDIRECT=1` limita a instrumentação às chamadas diretas `main` → `NextFrame`. Por isso `NextFrame` é `noexcept`: com `-fexceptions`, uma chamada que pode lançar sai de `main` por um `invoke_*` em JS, o ASYNCIFY não instrumenta `main` e ela recomeça do zero a cada quadro (tela preta após o clique).
 - Diferenças de plataforma ficam em `game_window.cpp` (janela e ritmo do loop); o resto do jogo não tem `#ifdef` de plataforma. Na web não há `SetTargetFPS`, porque a espera da raylib é ativa e travaria a página.
 - `game/assets/` é empacotado com `--preload-file`, mantendo os mesmos caminhos relativos do desktop. A página é `game/web/shell.html`.
 - **Windows**: tags `v*` disparam `release-windows.yml`, que compila com `PORTABLE=TRUE` (runtime estático, sem console), roda `mingw32-make test` e publica uma release com `EndlessRooms-windows.zip` (exe + `assets/`).

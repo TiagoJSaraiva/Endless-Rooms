@@ -311,6 +311,7 @@ ifeq ($(PLATFORM),PLATFORM_WEB)
     # Opções só de link do build web:
     #  ASYNCIFY + IGNORE_INDIRECT: só main() e GameWindow::NextFrame suspendem, por chamadas
     #    diretas, o que mantém baixo o custo do ASYNCIFY; a pilha dele guarda os locais de main().
+    #    NextFrame precisa ser noexcept, senão -fexceptions a chama via invoke_* (ver game_window.h).
     #  STACK_SIZE: main() tem muitos locais; o padrão do emscripten (64 KB) é pequeno demais.
     #  --preload-file: assets/ vira o sistema de arquivos virtual, com os mesmos caminhos relativos.
     LDFLAGS += -sUSE_GLFW=3 -sASYNCIFY -sASYNCIFY_IGNORE_INDIRECT=1 -sASYNCIFY_STACK_SIZE=65536 \

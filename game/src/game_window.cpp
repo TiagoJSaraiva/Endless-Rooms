@@ -33,7 +33,7 @@ void Open(int width, int height, const char* title) {
 #endif
 }
 
-bool NextFrame() {
+bool NextFrame() noexcept {
 #if defined(PLATFORM_WEB)
     // WindowShouldClose da raylib web dorme 16 ms fixos; a espera pelo quadro é mais suave.
     WaitForAnimationFrame();
