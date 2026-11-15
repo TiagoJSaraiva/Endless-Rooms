@@ -1,6 +1,7 @@
 #include "wall_prop.h"
 
 #include "door_visual_rules.h"
+#include "lighting_rules.h"
 
 #include <algorithm>
 #include <cmath>
@@ -104,9 +105,7 @@ float WallPropInstance::Depth() const {
 }
 
 Rectangle WallPropInstance::LightClip() const {
-    const auto& b = key.host.bounds;
-    return {float(b.x * TILE_SIZE), float((b.y - 2) * TILE_SIZE),
-            float(b.width * TILE_SIZE), float((b.height + 3) * TILE_SIZE)};
+    return LightingRules::HostLightClip(key.host.bounds, key.host.kind == WallRules::HostKind::Room);
 }
 
 const std::vector<WallPropDefinition>& GetWallPropDefinitions() {

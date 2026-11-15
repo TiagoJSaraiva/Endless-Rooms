@@ -97,7 +97,11 @@ saturação. A vela tem intensidade 0,4, cor RGB `(255, 210, 140)` e posição
 normalizada `(0,52; 0,04)` dentro do sprite completo. Esses valores ficam em
 `PropLight`.
 
-A luz acompanha câmera e zoom, e cada fonte é limitada à própria sala. A
+A luz acompanha câmera e zoom, e cada fonte é limitada à própria sala pelo
+recorte de `LightingRules::HostLightClip`: do topo da parede superior até a
+borda inferior do piso (onde termina a parede inferior) e, em salas, até a
+face externa das paredes laterais. Corredores não estendem o recorte para os
+lados, porque as laterais dos horizontais dão nas salas vizinhas. A
 revelação reduz só a luz emitida: salas ocultas não emitem, mas o filtro vale
 na tela inteira. As máscaras das portas continuam escuras. Não há sombras
 projetadas, emissão do jogador nem efeito sobre HUD, inventário, console e
@@ -197,8 +201,8 @@ Máscaras escuras de portas continuam sendo aplicadas normalmente.
 
 `SceneLighting::Apply` aceita fontes adicionais `SceneLightSource`, com
 posição global, configuração de luz, visibilidade e retângulo de recorte.
-As fontes de parede são limitadas à sala ou ao corredor anfitrião, incluindo
-a faixa vertical de paredes, e não iluminam salas vizinhas.
+As fontes de parede usam o mesmo recorte da sala ou do corredor anfitrião
+(`HostLightClip`) e não iluminam salas vizinhas nem o vazio abaixo da sala.
 Tochas e velas usam o mesmo passe multiplicativo, com saturação, câmera e
 zoom; interfaces continuam fora desse passe.
 

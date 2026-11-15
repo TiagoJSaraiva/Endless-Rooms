@@ -474,7 +474,7 @@ Rectangle ModuleBounds(const Module& module) {
     if (segment.section != Section::Side)
         return {segment.position.x * tile, y, module.widthTiles * tile, module.heightTiles * tile};
 
-    const float width = tile / 4.0f;
+    const float width = SideWallWidth;
     float x = segment.position.x * tile;
     if (segment.sidePlacement == SidePlacement::InsetRight) x += tile - width;
     else if (segment.sidePlacement == SidePlacement::Edge)

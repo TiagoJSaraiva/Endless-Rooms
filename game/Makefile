@@ -447,7 +447,7 @@ $(PROJECTILE_LIFETIME_TEST_BIN): tests/projectile_lifetime_tests.cpp $(PROP_GAME
 $(PROJECTILE_WALL_TEST_BIN): tests/projectile_wall_tests.cpp $(PROP_GAMEPLAY_SOURCES) $(wildcard src/*.h) raylib_build
 	$(CC) -o $@ tests/projectile_wall_tests.cpp $(PROP_GAMEPLAY_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
-WALL_PROP_RULES_SOURCES = src/wall_prop.cpp src/wall_rules.cpp src/floor_rules.cpp
+WALL_PROP_RULES_SOURCES = src/wall_prop.cpp src/wall_rules.cpp src/floor_rules.cpp src/lighting_rules.cpp
 REWARD_POUCH_GAMEPLAY_SOURCES = $(PROP_GAMEPLAY_SOURCES) src/reward_pouch_operations.cpp src/inventory_operations.cpp src/inventory_rules.cpp src/chest.cpp src/room_manager.cpp src/room_type_rules.cpp src/room_features.cpp src/biome_config.cpp $(WALL_PROP_RULES_SOURCES)
 $(REWARD_POUCH_GAMEPLAY_TEST_BIN): tests/reward_pouch_gameplay_tests.cpp $(REWARD_POUCH_GAMEPLAY_SOURCES) $(wildcard src/*.h) raylib_build
 	$(CC) -o $@ tests/reward_pouch_gameplay_tests.cpp $(REWARD_POUCH_GAMEPLAY_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
@@ -468,7 +468,7 @@ $(WALL_PROP_RULES_TEST_BIN): tests/wall_prop_rules_tests.cpp $(WALL_PROP_RULES_S
 test-wall-prop-render: $(WALL_PROP_RENDER_TEST_BIN)
 	$(WALL_PROP_RENDER_TEST_BIN)
 
-WALL_PROP_RENDER_SOURCES = $(WALL_PROP_RULES_SOURCES) src/wall_prop_renderer.cpp src/wall_tiles.cpp src/prop_renderer.cpp src/prop.cpp src/room.cpp src/lighting_rules.cpp
+WALL_PROP_RENDER_SOURCES = $(WALL_PROP_RULES_SOURCES) src/wall_prop_renderer.cpp src/wall_tiles.cpp src/prop_renderer.cpp src/prop.cpp src/room.cpp
 $(WALL_PROP_RENDER_TEST_BIN): tests/wall_prop_render_tests.cpp $(WALL_PROP_RENDER_SOURCES) $(wildcard src/*.h) raylib_build
 	$(CC) -o $@ tests/wall_prop_render_tests.cpp $(WALL_PROP_RENDER_SOURCES) $(CFLAGS) $(INCLUDE_PATHS) -I$(SRC_DIR) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 

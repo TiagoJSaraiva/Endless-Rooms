@@ -149,6 +149,14 @@ void Lighting() {
     assert(GetImageColor(torch, int(p.x), int(p.y)).r > GetImageColor(baseline, int(p.x), int(p.y)).r + 40);
     const int outside = int(bottom.LightClip().x - 1);
     Expect(GetImageColor(torch, outside, int(p.y)), GetImageColor(baseline, outside, int(p.y)));
+    // A luz termina na borda inferior do piso, onde acaba a parede inferior, e não no vazio abaixo.
+    const Rectangle roomClip = bottom.LightClip();
+    const int floorBottom = room.Layout().tileBounds.y * TILE_SIZE + room.Layout().tileBounds.height * TILE_SIZE;
+    assert(int(roomClip.y + roomClip.height) == floorBottom);
+    Expect(GetImageColor(torch, int(p.x), floorBottom + 1), GetImageColor(baseline, int(p.x), floorBottom + 1));
+    assert(GetImageColor(torch, int(p.x), floorBottom - 4).r > GetImageColor(baseline, int(p.x), floorBottom - 4).r + 8);
+    // A parede lateral da sala também recebe a luz.
+    assert(roomClip.x < room.Layout().tileBounds.x * TILE_SIZE);
     UnloadImage(baseline); UnloadImage(torch); UnloadImage(candle);
     camera.zoom = 0.5f; camera.offset = {20, 30};
     baseline = render({}); torch = render(sources);

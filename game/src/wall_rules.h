@@ -10,6 +10,10 @@
 
 namespace WallRules {
 
+// Geometria visual compartilhada com quem precisa conhecer o contorno da sala (ex.: recorte da luz).
+constexpr int UpperWallHeightTiles = 2;
+constexpr float SideWallWidth = TILE_SIZE / 4.0f;
+
 enum class Section : std::uint8_t {
     Side,
     Upper,

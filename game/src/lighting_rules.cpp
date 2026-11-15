@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "room.h"
+#include "wall_rules.h"
 
 namespace LightingRules {
 
@@ -91,6 +92,17 @@ std::optional<float> AmbientLevelAt(const std::vector<AmbientZone>& zones, Vecto
         if (!roomLevel) roomLevel = zone.startLevel;
     }
     return roomLevel;
+}
+
+Rectangle HostLightClip(const TileRect& hostTiles, bool includeSideWalls) {
+    const float tile = static_cast<float>(TILE_SIZE);
+    const float side = includeSideWalls ? WallRules::SideWallWidth : 0.0f;
+    // A parede inferior é desenhada sobre as duas últimas fileiras do piso, então a borda
+    // inferior do piso já é o fim visível da sala.
+    return Rectangle{hostTiles.x * tile - side,
+                     (hostTiles.y - WallRules::UpperWallHeightTiles) * tile,
+                     hostTiles.width * tile + side * 2.0f,
+                     (hostTiles.height + WallRules::UpperWallHeightTiles) * tile};
 }
 
 } // namespace LightingRules

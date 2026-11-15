@@ -33,4 +33,10 @@ std::vector<AmbientZone> BuildAmbientZones(const std::vector<const Room*>& rooms
 // chamador mantenha o último nível em vez de saltar.
 std::optional<float> AmbientLevelAt(const std::vector<AmbientZone>& zones, Vector2 point);
 
+// Área em pixels de mundo que a luz de uma sala ou corredor pode alcançar: do topo da parede
+// superior até a borda inferior do piso, onde termina a parede inferior. Com includeSideWalls,
+// vai até a face externa das paredes laterais; corredores não usam a extensão, porque nos
+// horizontais as laterais são as bocas que dão nas salas vizinhas.
+Rectangle HostLightClip(const TileRect& hostTiles, bool includeSideWalls);
+
 } // namespace LightingRules

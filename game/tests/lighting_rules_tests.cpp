@@ -130,6 +130,21 @@ void CheckCorridorPrecedence() {
     assert(LevelIs(zones, {10, 50}, 1.0f));
 }
 
+// A luz vai do topo da parede superior à borda inferior do piso e cobre as paredes laterais.
+void CheckHostLightClip() {
+    const Rectangle clip = HostLightClip({10, 4, 6, 5}, true);
+    const float tile = static_cast<float>(TILE_SIZE);
+    const float side = tile / 4.0f;
+    assert(Near(clip.x, 10 * tile - side));
+    assert(Near(clip.x + clip.width, 16 * tile + side));
+    assert(Near(clip.y, 2 * tile));
+    assert(Near(clip.y + clip.height, 9 * tile));
+    // Corredores ficam no próprio piso na horizontal.
+    const Rectangle corridor = HostLightClip({10, 4, 6, 5}, false);
+    assert(Near(corridor.x, 10 * tile) && Near(corridor.width, 6 * tile));
+    assert(Near(corridor.y + corridor.height, 9 * tile));
+}
+
 } // namespace
 
 int main() {
@@ -140,6 +155,7 @@ int main() {
     CheckSameBiomeAndMissingTarget();
     CheckSealedAndEmptyDoors();
     CheckCorridorPrecedence();
+    CheckHostLightClip();
     std::cout << "Lighting rules tests passed" << std::endl;
     return 0;
 }

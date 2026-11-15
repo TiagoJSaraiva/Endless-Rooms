@@ -1,4 +1,5 @@
 #include "prop_renderer.h"
+#include "lighting_rules.h"
 #include "rlgl.h"
 #include <algorithm>
 #include <cmath>
@@ -118,9 +119,7 @@ void SceneLighting::Apply(float ambientLevel,const std::vector<FloorRoomView>& r
     std::vector<SceneLightSource> sources=additionalLights;
     for(const auto& view:rooms) {
         if(view.visibility<=0) continue;
-        auto bounds=view.room->Layout().tileBounds;
-        Rectangle clip{float(bounds.x*TILE_SIZE),float((bounds.y-2)*TILE_SIZE),
-                       float(bounds.width*TILE_SIZE),float((bounds.height+3)*TILE_SIZE)};
+        const Rectangle clip=LightingRules::HostLightClip(view.room->Layout().tileBounds,true);
         for(const auto& p:view.room->Props()) {
             if(p.destroyed||!p.definition->light) continue;
             sources.push_back({props.LightPosition(p,time),*p.definition->light,clip,view.visibility});
