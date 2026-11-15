@@ -199,6 +199,71 @@ void Lighting() {
     lighting.Unload(); lighting.Unload();
 }
 
+// A face da parede inferior fica na frente da luz de dentro da sala, mas não da tocha presa a ela.
+void BottomWallLightOcclusion() {
+    TemporaryAssets assets;
+    auto room = MakeRoom();
+    auto definition = GetWallPropDefinitions()[0];
+    definition.texturePath = "assets/img/wallprop/test.png";
+    definition.animation = PropAnimation{16, 16, 8, 0.1f, false};
+    const auto bottom = At(room, WallRules::Section::Bottom, definition);
+    PropRenderer renderer; SceneLighting lighting;
+    Camera2D camera{}; camera.zoom = 1;
+    const float kDungeonLevel = LightingRules::AmbientLevel(BiomeType::Dungeon);
+
+    // Oclusores vindos do passe frontal: a parede opaca e, com o jogador atrás dela, a translúcida.
+    WallTiles walls; walls.BeginRun(17);
+    BeginTextureMode(target); ClearBackground(WHITE);
+    walls.DrawForeground({{&room, 1}}, Rectangle{2000, 2000, 24, 24}, 0.2f);
+    EndTextureMode();
+    const auto opaque = walls.ForegroundLightOccluders({{&room, 1}});
+    const Rectangle wall = WallRules::ModuleBounds(bottom.module);
+    bool foundWall = false;
+    for (const auto& occluder : opaque) {
+        if (occluder.bounds.x == wall.x && occluder.bounds.y == wall.y) {
+            foundWall = true; assert(std::fabs(occluder.opacity - 1.0f) < 0.01f);
+        }
+    }
+    assert(foundWall);
+    BeginTextureMode(target); ClearBackground(WHITE);
+    walls.DrawForeground({{&room, 1}}, Rectangle{wall.x + 32, wall.y + 32, 24, 24}, 0.2f);
+    EndTextureMode();
+    for (const auto& occluder : walls.ForegroundLightOccluders({{&room, 1}}))
+        if (occluder.bounds.x == wall.x && occluder.bounds.y == wall.y)
+            assert(std::fabs(occluder.opacity - 0.6f) < 0.01f);
+
+    // Fonte interior logo acima da parede, recortada pela sala.
+    const Rectangle clip = LightingRules::HostLightClip(room.Layout().tileBounds, true);
+    const SceneLightSource interior{{wall.x + wall.width * 0.5f, wall.y - 40}, PropLight{320.0f, 0.65f, {255, 210, 140, 255}, {}},
+                                    clip, 1.0f, LightLayer::Interior};
+    auto render = [&](const std::vector<SceneLightSource>& lights, const std::vector<LightingRules::LightOccluder>& occluders) {
+        BeginTextureMode(target); ClearBackground(WHITE);
+        lighting.Apply(kDungeonLevel, {{&room, 1}}, camera, renderer, 0, &target, lights, occluders);
+        return Capture();
+    };
+    const int sx = int(wall.x + wall.width * 0.5f), wallY = int(wall.y + 20), aboveY = int(wall.y - 20);
+    Image baseline = render({}, {});
+    Image open = render({interior}, {});
+    Image blocked = render({interior}, {{wall, 1.0f}});
+    Image partial = render({interior}, {{wall, 0.6f}});
+    const Color base = GetImageColor(baseline, sx, wallY), lit = GetImageColor(open, sx, wallY);
+    assert(lit.r > base.r + 20);
+    Expect(GetImageColor(blocked, sx, wallY), base);
+    // Acima da parede a luz continua igual.
+    Expect(GetImageColor(blocked, sx, aboveY), GetImageColor(open, sx, aboveY));
+    Expect(GetImageColor(partial, sx, wallY), Over(lit, base, 0.4f));
+    UnloadImage(open); UnloadImage(blocked); UnloadImage(partial);
+
+    // A tocha da própria parede inferior é aplicada depois do oclusor e continua iluminando a parede.
+    const auto torchLights = WallPropRendering::Lights({{&bottom, 1}}, renderer, 0);
+    assert(torchLights.size() == 1 && torchLights[0].layer == LightLayer::BottomWall);
+    const Vector2 p = torchLights[0].position;
+    Image torch = render(torchLights, {{wall, 1.0f}});
+    assert(GetImageColor(torch, int(p.x), int(p.y)).r > GetImageColor(baseline, int(p.x), int(p.y)).r + 40);
+    UnloadImage(torch); UnloadImage(baseline);
+    lighting.Unload(); renderer.Unload();
+}
+
 void RealAssetOcclusion() {
     auto room = MakeRoom();
     const auto& definition = GetWallPropDefinitions()[0];
@@ -274,7 +339,8 @@ void Preview() {
         walls.DrawForeground(rooms, player, 0.2f);
         EndMode2D();
         const auto lights = WallPropRendering::Lights(props, renderer, 0.23f);
-        lighting.Apply(LightingRules::AmbientLevel(BiomeType::Dungeon), floors, camera, renderer, 0.23f, &target, lights);
+        lighting.Apply(LightingRules::AmbientLevel(BiomeType::Dungeon), floors, camera, renderer, 0.23f, &target, lights,
+                       walls.ForegroundLightOccluders(rooms));
         DrawText(panel == 0 ? "UPPER" : panel == 1 ? "BOTTOM OPACA" : panel == 2 ? "BOTTOM TRANSLUCIDA" : "CORREDOR", 18, 14, 20, WHITE);
         Image image = Capture();
         ImageDraw(&preview, image, {0, 0, 512, 384}, {float(px), float(py), 512, 384}, WHITE);
@@ -332,7 +398,7 @@ void SideTorchPreview() {
     walls.DrawForeground(rooms, Rectangle{2000, 2000, 24, 24}, 0.2f);
     EndMode2D();
     lighting.Apply(LightingRules::AmbientLevel(BiomeType::Dungeon), floors, camera, renderer, 0.23f, &target,
-                   WallPropRendering::Lights(props, renderer, 0.23f));
+                   WallPropRendering::Lights(props, renderer, 0.23f), walls.ForegroundLightOccluders(rooms));
     Image image = Capture();
     ImageCrop(&image, {0, 0, 512, 384});
     fs::create_directories("obj");
@@ -344,7 +410,7 @@ int main() {
     SetTraceLogLevel(LOG_WARNING); SetConfigFlags(FLAG_WINDOW_HIDDEN);
     InitWindow(1024, 768, "Wall prop render tests");
     assert(IsWindowReady()); target = LoadRenderTexture(1024, 768);
-    SpritesAndOcclusion(); Lighting(); RealAssetOcclusion(); FlippedSideSprite(); Preview(); SideTorchPreview();
+    SpritesAndOcclusion(); Lighting(); BottomWallLightOcclusion(); RealAssetOcclusion(); FlippedSideSprite(); Preview(); SideTorchPreview();
     UnloadRenderTexture(target); CloseWindow();
     std::cout << "Wall prop render tests passed\n";
 }

@@ -89,8 +89,17 @@ void PropRenderer::Unload() {
     textures_.clear();
 }
 
+namespace {
+Rectangle WorldToScreenRect(Rectangle bounds,Camera2D camera) {
+    Vector2 top=GetWorldToScreen2D({bounds.x,bounds.y},camera);
+    Vector2 bottom=GetWorldToScreen2D({bounds.x+bounds.width,bounds.y+bounds.height},camera);
+    return {top.x,top.y,bottom.x-top.x,bottom.y-top.y};
+}
+}
+
 void SceneLighting::Apply(float ambientLevel,const std::vector<FloorRoomView>& rooms,Camera2D camera,PropRenderer& props,float time,
-                          const RenderTexture2D* output,const std::vector<SceneLightSource>& additionalLights) {
+                          const RenderTexture2D* output,const std::vector<SceneLightSource>& additionalLights,
+                          const std::vector<LightingRules::LightOccluder>& occluders) {
     // Resource allocation may bind a framebuffer; finish the world pass first.
     rlDrawRenderBatchActive();
     int width=output?output->texture.width:GetScreenWidth();
@@ -126,25 +135,40 @@ void SceneLighting::Apply(float ambientLevel,const std::vector<FloorRoomView>& r
         }
     }
     // Explicit clips keep room and corridor sources out of unrevealed neighbors.
-    BeginBlendMode(BLEND_ADDITIVE);
-    for(const auto& source:sources) {
-        if(source.visibility<=0||source.clipBounds.width<=0||source.clipBounds.height<=0) continue;
-        const auto& bounds=source.clipBounds;
-        Vector2 top=GetWorldToScreen2D({bounds.x,bounds.y},camera);
-        Vector2 bottom=GetWorldToScreen2D({bounds.x+bounds.width,bounds.y+bounds.height},camera);
-        BeginScissorMode(int(std::floor(top.x)),int(std::floor(top.y)),int(std::ceil(bottom.x-top.x)),int(std::ceil(bottom.y-top.y)));
-        const auto& light=source.light;
-        Vector2 center=GetWorldToScreen2D(source.position,camera);
-        float radius=std::max(0.0f,light.radius*camera.zoom);
-        Color tint=light.color;
-        float intensity=std::clamp(light.intensity*source.visibility,0.0f,1.0f);
-        tint.r=static_cast<unsigned char>(tint.r*intensity);
-        tint.g=static_cast<unsigned char>(tint.g*intensity);
-        tint.b=static_cast<unsigned char>(tint.b*intensity);
-        DrawTexturePro(gradient_,{0,0,128,128},{center.x-radius,center.y-radius,radius*2,radius*2},{0,0},0,tint);
-        EndScissorMode();
+    auto drawLayer=[&](LightLayer layer) {
+        BeginBlendMode(BLEND_ADDITIVE);
+        for(const auto& source:sources) {
+            if(source.layer!=layer) continue;
+            if(source.visibility<=0||source.clipBounds.width<=0||source.clipBounds.height<=0) continue;
+            const Rectangle clip=WorldToScreenRect(source.clipBounds,camera);
+            BeginScissorMode(int(std::floor(clip.x)),int(std::floor(clip.y)),int(std::ceil(clip.width)),int(std::ceil(clip.height)));
+            const auto& light=source.light;
+            Vector2 center=GetWorldToScreen2D(source.position,camera);
+            float radius=std::max(0.0f,light.radius*camera.zoom);
+            Color tint=light.color;
+            float intensity=std::clamp(light.intensity*source.visibility,0.0f,1.0f);
+            tint.r=static_cast<unsigned char>(tint.r*intensity);
+            tint.g=static_cast<unsigned char>(tint.g*intensity);
+            tint.b=static_cast<unsigned char>(tint.b*intensity);
+            DrawTexturePro(gradient_,{0,0,128,128},{center.x-radius,center.y-radius,radius*2,radius*2},{0,0},0,tint);
+            EndScissorMode();
+        }
+        EndBlendMode();
+    };
+    drawLayer(LightLayer::Interior);
+    // A face da parede inferior fica na frente da luz de dentro da sala: devolve o nível ambiente
+    // a ela, misturado pela opacidade para que a parede translúcida deixe passar parte da luz.
+    // O alpha do mapa precisa continuar 1, porque o passe multiplicativo final o usa.
+    rlSetBlendFactorsSeparate(RL_SRC_ALPHA,RL_ONE_MINUS_SRC_ALPHA,RL_ZERO,RL_ONE,RL_FUNC_ADD,RL_FUNC_ADD);
+    BeginBlendMode(BLEND_CUSTOM_SEPARATE);
+    for(const auto& occluder:occluders) {
+        const float opacity=std::clamp(occluder.opacity,0.0f,1.0f);
+        if(opacity<=0) continue;
+        DrawRectangleRec(WorldToScreenRect(occluder.bounds,camera),
+                         {value,value,value,static_cast<unsigned char>(std::round(255*opacity))});
     }
     EndBlendMode();
+    drawLayer(LightLayer::BottomWall);
     EndTextureMode();
     if(output) BeginTextureMode(*output);
     BeginBlendMode(BLEND_MULTIPLIED);

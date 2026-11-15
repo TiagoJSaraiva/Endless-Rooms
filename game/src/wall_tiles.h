@@ -1,5 +1,6 @@
 #pragma once
 
+#include "lighting_rules.h"
 #include "wall_rules.h"
 
 #include <array>
@@ -19,6 +20,10 @@ public:
     void DrawForeground(const std::vector<WallRules::RoomView>& rooms) const;
     void DrawForeground(const std::vector<WallRules::RoomView>& rooms,
                         Rectangle playerBounds, float deltaSeconds) const;
+    // Paredes do passe frontal (inferiores e seus acabamentos laterais) com a opacidade em que
+    // foram desenhadas. Chamar depois de DrawForeground com o jogador, que atualiza a translucidez.
+    std::vector<LightingRules::LightOccluder> ForegroundLightOccluders(
+        const std::vector<WallRules::RoomView>& rooms) const;
     void Unload();
 
 private:
@@ -39,6 +44,8 @@ private:
     void UpdateBottomWallTweens(const WallRules::Frame& frame,
                                 Rectangle playerBounds, float deltaSeconds) const;
     void DrawFallback(const WallRules::Module& module) const;
+    // Visibilidade da revelação combinada com a translucidez da fileira inferior, se houver.
+    float ForegroundVisibility(const WallRules::Segment& segment, bool useBottomWallTweens) const;
 
     std::array<Catalog, 16> catalogs_{};
     mutable WallRules::TileMemory memory_;

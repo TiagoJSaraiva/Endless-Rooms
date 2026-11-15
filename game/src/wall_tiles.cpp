@@ -51,6 +51,12 @@ Color WallBaseColorForBiome(BiomeType biome) {
     }
 }
 
+// Paredes inferiores e acabamentos laterais encaixados nelas ficam na frente dos atores.
+bool DrawsInForeground(const WallRules::Segment& segment) {
+    return segment.section == WallRules::Section::Bottom ||
+           segment.sidePlacement != WallRules::SidePlacement::Edge;
+}
+
 unsigned char ClampToByte(int value) {
     return static_cast<unsigned char>(std::clamp(value, 0, 255));
 }
@@ -281,14 +287,37 @@ void WallTiles::UpdateBottomWallTweens(const WallRules::Frame& frame,
     }
 }
 
+float WallTiles::ForegroundVisibility(const WallRules::Segment& segment,
+                                      bool useBottomWallTweens) const {
+    if (!useBottomWallTweens || segment.section != WallRules::Section::Bottom) {
+        return segment.visibility;
+    }
+    const WallRules::Key moduleKey{segment.position, WallRules::Section::Bottom,
+                                   segment.sidePlacement};
+    const auto row = bottomWallRowsBySegment_.find(moduleKey);
+    if (row == bottomWallRowsBySegment_.end()) return segment.visibility;
+    const auto tween = bottomWallTweens_.find(row->second);
+    if (tween == bottomWallTweens_.end()) return segment.visibility;
+    return segment.visibility * tween->second.visibility;
+}
+
+std::vector<LightingRules::LightOccluder> WallTiles::ForegroundLightOccluders(
+    const std::vector<WallRules::RoomView>& rooms) const {
+    std::vector<LightingRules::LightOccluder> occluders;
+    for (const auto& module : WallRules::BuildModules(WallRules::BuildFrame(rooms))) {
+        if (!DrawsInForeground(module.segment)) continue;
+        const float opacity = ForegroundVisibility(module.segment, true);
+        if (opacity <= 0.0f) continue;
+        occluders.push_back({WallRules::ModuleBounds(module), opacity});
+    }
+    return occluders;
+}
+
 void WallTiles::Draw(const WallRules::Frame& frame, bool foreground,
                      bool useBottomWallTweens) const {
     std::vector<WallRules::Module> modules;
     for (const auto& module : WallRules::BuildModules(frame)) {
-        const auto& segment = module.segment;
-        const bool drawsInForeground = segment.section == WallRules::Section::Bottom ||
-            segment.sidePlacement != WallRules::SidePlacement::Edge;
-        if (drawsInForeground == foreground) {
+        if (DrawsInForeground(module.segment) == foreground) {
             modules.push_back(module);
         }
     }
@@ -310,17 +339,7 @@ void WallTiles::Draw(const WallRules::Frame& frame, bool foreground,
     for (const auto& module : modules) {
         auto drawModule = module;
         auto& segment = drawModule.segment;
-        if (useBottomWallTweens && segment.section == WallRules::Section::Bottom) {
-            const WallRules::Key moduleKey{segment.position, WallRules::Section::Bottom,
-                                           segment.sidePlacement};
-            const auto row = bottomWallRowsBySegment_.find(moduleKey);
-            const auto tween = row == bottomWallRowsBySegment_.end()
-                ? bottomWallTweens_.end()
-                : bottomWallTweens_.find(row->second);
-            if (tween != bottomWallTweens_.end()) {
-                segment.visibility *= tween->second.visibility;
-            }
-        }
+        segment.visibility = ForegroundVisibility(segment, useBottomWallTweens);
 
         WallRules::WallType selectedWallType = segment.wallType;
         std::size_t catalogIndex = CatalogIndex(segment.biome, segment.section, selectedWallType);

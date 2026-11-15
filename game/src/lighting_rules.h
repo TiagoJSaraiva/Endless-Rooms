@@ -39,4 +39,11 @@ std::optional<float> AmbientLevelAt(const std::vector<AmbientZone>& zones, Vecto
 // horizontais as laterais são as bocas que dão nas salas vizinhas.
 Rectangle HostLightClip(const TileRect& hostTiles, bool includeSideWalls);
 
+// Área do mundo que esconde a luz vinda de dentro da sala (a face visível da parede inferior).
+// opacity acompanha a opacidade da parede: 0,6 deixa passar 40% da luz de trás.
+struct LightOccluder {
+    Rectangle bounds{};
+    float opacity{1.0f};
+};
+
 } // namespace LightingRules

@@ -23,6 +23,8 @@ public:
     void DrawWallForeground(const std::vector<FloorRoomView>& rooms) const;
     void DrawWallForeground(const std::vector<FloorRoomView>& rooms,
                             Rectangle playerBounds, float deltaSeconds) const;
+    // Oclusores de luz das paredes frontais (ver WallTiles::ForegroundLightOccluders).
+    std::vector<LightingRules::LightOccluder> WallLightOccluders(const std::vector<FloorRoomView>& rooms) const;
     // Used after the shared floor pass; standalone background drawing still includes its floor.
     void DrawRoomBackgroundWalls(const Room& room, bool isActive, float visibility) const;
     // Idempotent; call before closing the graphics context.

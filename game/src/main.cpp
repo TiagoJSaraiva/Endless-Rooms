@@ -2307,7 +2307,9 @@ int main() {
         if (auto level = LightingRules::AmbientLevelAt(LightingRules::BuildAmbientZones(ambientRooms), playerPosition)) {
             ambientLevel = *level;
         }
-        sceneLighting.Apply(ambientLevel, floorRooms, renderCamera, propRenderer, propAnimationTime, nullptr, wallLights);
+        const auto wallOccluders = roomRenderer.WallLightOccluders(floorRooms);
+        sceneLighting.Apply(ambientLevel, floorRooms, renderCamera, propRenderer, propAnimationTime, nullptr, wallLights,
+                            wallOccluders);
         BeginMode2D(renderCamera);
 
 

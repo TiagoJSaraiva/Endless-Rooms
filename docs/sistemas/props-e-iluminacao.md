@@ -199,6 +199,17 @@ Em corredores, a exposição combina revelação e progresso de abertura da
 porta compartilhada; portas fechadas não expõem tochas nem emitem essa luz.
 Máscaras escuras de portas continuam sendo aplicadas normalmente.
 
+A face da parede inferior fica na frente da luz de dentro da sala. Fontes
+`SceneLightSource` têm uma camada (`LightLayer`): `Interior` (props de piso,
+tochas de cima e laterais) ou `BottomWall` (tochas da parede inferior).
+`SceneLighting::Apply` aplica primeiro as `Interior`; depois os oclusores
+(`LightingRules::LightOccluder`, vindos de `WallTiles::ForegroundLightOccluders`
+e repassados por `RoomRenderer::WallLightOccluders`) devolvem ao nível
+ambiente as paredes do passe frontal, misturando pela opacidade com que foram
+desenhadas: a parede translúcida (60%) deixa passar 40% da luz de trás; por
+fim entram as `BottomWall`, que continuam iluminando a própria parede. O alpha
+do mapa de luz é preservado nesse passe, porque o multiplicativo final o usa.
+
 `SceneLighting::Apply` aceita fontes adicionais `SceneLightSource`, com
 posição global, configuração de luz, visibilidade e retângulo de recorte.
 As fontes de parede usam o mesmo recorte da sala ou do corredor anfitrião
