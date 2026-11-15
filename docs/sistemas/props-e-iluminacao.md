@@ -199,6 +199,13 @@ Em corredores, a exposição combina revelação e progresso de abertura da
 porta compartilhada; portas fechadas não expõem tochas nem emitem essa luz.
 Máscaras escuras de portas continuam sendo aplicadas normalmente.
 
+A máscara de um corredor fechado (`DoorVisualRules::CorridorMaskBehindDoor`,
+na cor do vazio) começa logo atrás da porta. Em corredores horizontais cobre
+do topo da parede superior do corredor até o fim da parede inferior, e o
+primeiro tile junto da porta é uma transição de transparente para opaco, para
+que a porta lateral não termine num corte seco. Corredores verticais cobrem só
+o piso, sem transição. A máscara inteira some junto com a abertura da porta.
+
 A face da parede inferior fica na frente da luz de dentro da sala. Fontes
 `SceneLightSource` têm uma camada (`LightLayer`): `Interior` (props de piso,
 tochas de cima e laterais) ou `BottomWall` (tochas da parede inferior).
@@ -240,7 +247,8 @@ mingw32-make test-wall-prop-render
 ```
 
 Os testes de regras não exigem janela; `lighting_rules_tests` cobre a tabela
-de luminosidade e o gradiente dos corredores. Os testes de combate e gameplay
+de luminosidade, o gradiente dos corredores e o recorte `HostLightClip`;
+`door_visual_rules_tests` cobre a máscara dos corredores fechados. Os testes de combate e gameplay
 usam a Raylib vendorizada, sem abrir janela. O teste gráfico exige contexto
 OpenGL e usa uma janela oculta, assets temporários e leitura de uma textura
 de tamanho fixo, independente da escala de tela do Windows. Ele cobre
@@ -254,7 +262,10 @@ de portas. A suíte de geração também verifica a integração do registro com
 `RoomManager` e sua substituição ao reiniciar. O teste gráfico compara pixels
 durante entrada e saída da translucidez da bottom, profundidade dos atores,
 os oito frames, margens transparentes, luz além do alcance da vela, recorte
-em salas/corredores e câmera com zoom. Usa janela oculta e assets temporários.
+em salas/corredores (sem vazar abaixo do piso), oclusão da luz interna pela
+parede inferior opaca e translúcida e câmera com zoom. Usa janela oculta e
+assets temporários. `wall_render_tests` cobre o rodapé das paredes inferiores
+e dos cantos e a ausência dele nos acabamentos que seguem para um corredor.
 A prévia `game/obj/wall-props-preview.png` usa os sprites reais e os passes de
 parede e iluminação, mostrando upper, bottom opaca, bottom translúcida e um
 corredor aberto. Ambas as prévias são artefatos locais, fora do Git.
@@ -293,3 +304,12 @@ Verificação manual em `game.exe`, iniciado de `game/`:
    (vasos, barris) nunca as cobrem. A prévia
    `game/obj/side-torch-preview.png` (gerada por `test-wall-prop-render`)
    mostra o encaixe com os sprites reais.
+10. Junto à parede inferior de salas e corredores horizontais: a luz das
+    tochas termina na borda de baixo da parede, sem faixa clara no vazio; a
+    face da parede não recebe luz de dentro da sala (só das tochas presas a
+    ela); com o jogador atrás dela, a parede translúcida deixa passar parte da
+    luz. O rodapé se dissolve no vazio, inclusive nos cantos, e as paredes de
+    um corredor ao sul seguem sem corte.
+11. Portas leste/oeste fechadas: a máscara cobre o corredor inteiro na
+    vertical, sem tijolos aparecendo acima, e tem uma transição suave junto à
+    porta; ao abrir, tudo some junto.

@@ -107,8 +107,7 @@ struct DoorRenderData {
 };
 
 struct DoorMaskData {
-    Rectangle corridorMask{};
-    bool hasCorridorMask{false};
+    DoorVisualRules::CorridorMask corridorMask{};
     float alpha{1.0f};
 };
 
@@ -120,9 +119,6 @@ struct RoomRevealState {
 constexpr float DOOR_COLLIDER_THICKNESS = 24.0f;
 constexpr float DOOR_OFFSET_FROM_ROOM = 15.0f;
 constexpr float DOOR_INTERACTION_DISTANCE = 150.0f;
-constexpr float DOOR_MASK_CLEARANCE = 1.0f;
-constexpr float HORIZONTAL_CORRIDOR_MASK_EXTRA_HEIGHT = static_cast<float>(TILE_SIZE);
-constexpr float HORIZONTAL_CORRIDOR_MASK_VERTICAL_OFFSET = static_cast<float>(TILE_SIZE) * 0.5f;
 
 // Offset aplicado ao boneco de treinamento em relação ao centro da sala inicial.
 const Vector2 kTrainingDummyOffset{TILE_SIZE * 2.5f, 0.0f};
@@ -332,62 +328,25 @@ Rectangle ComputeDoorCollisionHitbox(const RoomLayout& layout,
     return collision;
 }
 
-// Ajusta a máscara do corredor para não ultrapassar a posição visual da porta.
-bool ClipCorridorMaskBehindDoor(Direction direction,
-                                const Rectangle& doorHitbox,
-                                Rectangle& corridorMask) {
-    const float maskRight = corridorMask.x + corridorMask.width;
-    const float maskBottom = corridorMask.y + corridorMask.height;
-
-    switch (direction) {
-        case Direction::North: {
-            float doorBack = doorHitbox.y - DOOR_MASK_CLEARANCE;
-            float newBottom = std::min(doorBack, maskBottom);
-            if (newBottom <= corridorMask.y) {
-                return false;
-            }
-            corridorMask.height = newBottom - corridorMask.y;
-            return corridorMask.height > 0.0f;
-        }
-        case Direction::South: {
-            float doorBack = doorHitbox.y + doorHitbox.height + DOOR_MASK_CLEARANCE;
-            float newY = std::max(doorBack, corridorMask.y);
-            if (newY >= maskBottom) {
-                return false;
-            }
-            corridorMask.height = maskBottom - newY;
-            corridorMask.y = newY;
-            return corridorMask.height > 0.0f;
-        }
-        case Direction::East: {
-            float doorBack = doorHitbox.x + doorHitbox.width + DOOR_MASK_CLEARANCE;
-            float newX = std::max(doorBack, corridorMask.x);
-            if (newX >= maskRight) {
-                return false;
-            }
-            corridorMask.width = maskRight - newX;
-            corridorMask.x = newX;
-            return corridorMask.width > 0.0f;
-        }
-        case Direction::West: {
-            float doorBack = doorHitbox.x - DOOR_MASK_CLEARANCE;
-            float newRight = std::min(doorBack, maskRight);
-            if (newRight <= corridorMask.x) {
-                return false;
-            }
-            corridorMask.width = newRight - corridorMask.x;
-            return corridorMask.width > 0.0f;
-        }
-    }
-
-    return false;
-}
-
 // Retorna a cor final utilizada ao desenhar a máscara de corredor com o alfa desejado.
 Color DoorMaskColor(float alpha) {
     Color color = VOID_COLOR;
     color.a = static_cast<unsigned char>(std::clamp(alpha, 0.0f, 1.0f) * 255.0f);
     return color;
+}
+
+// Desenha a máscara do corredor: parte sólida e, em corredores horizontais, a transição junto da porta.
+void DrawCorridorMask(const DoorVisualRules::CorridorMask& mask, float alpha) {
+    const Color solid = DoorMaskColor(alpha);
+    const Color clear = DoorMaskColor(0.0f);
+    if (mask.solid.width > 0.0f && mask.solid.height > 0.0f) {
+        DrawRectangleRec(mask.solid, solid);
+    }
+    if (mask.fade.width > 0.0f && mask.fade.height > 0.0f) {
+        DrawRectangleGradientH(static_cast<int>(mask.fade.x), static_cast<int>(mask.fade.y),
+                               static_cast<int>(mask.fade.width), static_cast<int>(mask.fade.height),
+                               mask.doorOnLeft ? clear : solid, mask.doorOnLeft ? solid : clear);
+    }
 }
 
 // Tenta carregar uma textura caso o arquivo exista; caso contrário emite log e retorna vazio.
@@ -1817,27 +1776,12 @@ int main() {
                     }
                 }
 
-                if (!doorState.open && doorState.maskActive) {
-                    DoorMaskData mask{};
-                    mask.alpha = doorAlpha * roomVisibility;
-                    if (door.corridorTiles.width > 0 && door.corridorTiles.height > 0) {
-                        Rectangle corridorMask = TileRectToPixels(door.corridorTiles);
-                        if (ClipCorridorMaskBehindDoor(door.direction, doorHitbox, corridorMask)) {
-                            if (door.direction == Direction::East || door.direction == Direction::West) {
-                                const float wallThickness = static_cast<float>(TILE_SIZE);
-                                corridorMask.y -= wallThickness;
-                                corridorMask.height += wallThickness * 2.0f;
-                                // Ajuste o offset/extra height usando as constantes declaradas no topo do arquivo.
-                                corridorMask.y -= HORIZONTAL_CORRIDOR_MASK_VERTICAL_OFFSET;
-                                corridorMask.height += HORIZONTAL_CORRIDOR_MASK_VERTICAL_OFFSET;
-                                corridorMask.height += HORIZONTAL_CORRIDOR_MASK_EXTRA_HEIGHT;
-                            }
-                            mask.hasCorridorMask = true;
-                            mask.corridorMask = corridorMask;
-                        }
-                    }
-                    if (mask.hasCorridorMask) {
-                        doorMaskData.push_back(mask);
+                if (!doorState.open && doorState.maskActive &&
+                    door.corridorTiles.width > 0 && door.corridorTiles.height > 0) {
+                    const auto corridorMask = DoorVisualRules::CorridorMaskBehindDoor(
+                        door.direction, TileRectToPixels(door.corridorTiles), doorHitbox);
+                    if (corridorMask) {
+                        doorMaskData.push_back(DoorMaskData{*corridorMask, doorAlpha * roomVisibility});
                     }
                 }
 
@@ -2287,11 +2231,7 @@ int main() {
 
         // Aplica máscaras escuras aos corredores conectados a portas ainda fechadas.
         for (const DoorMaskData& mask : doorMaskData) {
-            if (!mask.hasCorridorMask) {
-                continue;
-            }
-            Color maskColor = DoorMaskColor(mask.alpha);
-            DrawRectangleRec(mask.corridorMask, maskColor);
+            DrawCorridorMask(mask.corridorMask, mask.alpha);
         }
 
         drawDoors(false, true);

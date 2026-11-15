@@ -32,3 +32,4 @@ debug.txt
 /tests/economy_tests
 /tests/enemy_rules_tests
 /tests/body_rules_tests
+/tests/door_visual_rules_tests
