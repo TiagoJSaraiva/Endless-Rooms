@@ -6,6 +6,7 @@
 - Sprites do cavaleiro e dos inimigos ampliados em 1,4× (`SPRITE_SCALE` nos geradores de `tools/sprites/`). A área de dano virou o retângulo do corpo de cada sprite e os ataques saem da altura das mãos (`body_rules`); o colisor de movimento não mudou.
 - Ajustes de ambientação: mais tochas (raramente vizinhas) e tochas nas paredes laterais de salas normais e corredores; menos vasos; mais barris com vela, espalhados; salas especiais nunca vizinhas de outra do mesmo tipo. Tochas laterais são desenhadas acima de props de piso que as cubram.
 - Rebalanceamento manual de armas pelo desenvolvedor (`4913d1d`): Cajado de Carvalho com 4,5 de dano por tick (DPS ~22,8) e Espada Rúnica com 36 de dano e giro de 150 × 40 (DPS médio ~55,9). As faixas de `weapon_rules_tests`, `armas.md` e `balanceamento.md` foram ajustadas a esses valores (Cajado 21 a 25; Rúnica com média 50 a 60).
+- Correções visuais de luz e paredes: a luz das fontes termina na borda real da sala (sem faixa no vazio abaixo); a parede inferior não recebe luz de dentro da sala, só das tochas presas a ela; o rodapé das paredes inferiores se dissolve no vazio; a máscara de corredores laterais fechados cobre o corredor inteiro na vertical, com transição junto à porta. Aguardam validação jogando (roteiros 10 e 11 em `props-e-iluminacao.md`).
 - Jogo jogável: lobby, salas geradas por bioma, combate melee/ranged, props e tochas com iluminação, reward pouches, inventário, loja, forja e baú.
 
 ## Roadmap até a demo
@@ -63,6 +64,7 @@ Concluída: cada subtarefa foi implementada por um subagente em branch própria,
 ## Próximo passo
 - Desenvolvedor: validar jogando 1.2 a 1.5 e a onda 1 (roteiros em `inimigos.md`, `armas.md`, `economia.md` e `balanceamento.md`), depois o playtest 1.9d; validar a escala 1,4× dos sprites, a área de dano retangular e a saída dos ataques pelas mãos (roteiro em `inimigos.md`; conferir também `displayOffset` de arco, cajado e espada em `armas.md`); jogar com os pesos de salas 71/12/12/5 (mais lojas e forjas, menos salas normais) e dizer se a quantidade de moedas por run continua boa.
 - Desenvolvedor: validar jogando os ajustes de ambientação (roteiro 9 em `props-e-iluminacao.md`): tamanho e posição das tochas laterais, quantidade de tochas, vasos e barris, luz geral das salas.
+- Desenvolvedor: validar jogando as correções de luz, rodapé e máscara de corredores (roteiros 10 e 11 em `props-e-iluminacao.md`); se o rodapé (32 px) ou a transição da máscara (64 px) pedirem outro tamanho, os ajustes são `kFooterFadeHeight` em `wall_tiles.cpp` e `kHorizontalFadeWidth` em `door_visual_rules.cpp`.
 - Depois da validação: 1.10 (UI) com o desenvolvedor.
 
 ## Bloqueios
