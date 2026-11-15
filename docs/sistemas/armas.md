@@ -21,7 +21,7 @@ Define como o dano das armas é calculado, o DPS esperado por raridade e onde re
   - Espada Rúnica: giro de 1,6 volta a 480 °/s dura 1,2 s; 1 acerto por alvo a cada 0,4 s (`perTargetHitCooldownSeconds`) dá 2 ou 3 acertos conforme a posição do alvo.
   - Broquel: o golpe vive 0,75 s e o cooldown por alvo é 0,8 s, então cada alvo é acertado uma vez por batida.
   - Demais armas: 1.
-- Metas (de `balanceamento.md`): raridade 2 ~20; raridade 3 ~30; raridade 5 ~50. O Broquel (raridade 3) fica em ~26, acima do melhor de raridade 2 (22,6) por causa da Defesa +5.
+- Metas (de `balanceamento.md`): raridade 2 ~20; raridade 3 ~30; raridade 5 ~50. O Broquel (raridade 3) fica em ~26, acima do melhor de raridade 2 (22,6) por causa da Defesa +5. Depois do rebalanceamento manual (`4913d1d`), o Cajado fica em ~23 (abaixo do Broquel) e a Rúnica em ~56.
 
 ## Tabela de armas (valores vigentes)
 
@@ -30,9 +30,9 @@ Define como o dano das armas é calculado, o DPS esperado por raridade e onde re
 | Espada Curta | 2 | 12 | 1,4 (+0,12/Dest.) = 1,52 | 8% +0,6%/Let., ×1,3 | 1 | 18,7 |
 | Machadinha | 2 | 16 | 1,1 | 10% +0,7%/Let., ×1,45 | 1 | 18,6 |
 | Arco Simples | 2 | 8,5 | 2,2 (+0,14/Dest.) = 2,48 | 12% +0,8%/Let., ×1,45 | 1 | 22,6 |
-| Cajado de Carvalho | 3 | 6 por tick (antes 2) | 1,6 | 10%, ×1,55 | 3 ticks | 30,4 |
+| Cajado de Carvalho | 3 | 4,5 por tick | 1,6 | 10%, ×1,55 | 3 ticks | 22,8 |
 | Broquel | 3 | 43 (antes 10) | 0,6 | 5%, ×1,2 | 1 | 26,1 |
-| Espada Rúnica | 5 | 32,5 (antes 20) | 0,55 | 14% +1%/Let. (20% com a passiva), ×1,65 | 2 a 3 | 40,4 (2) a 60,6 (3); média 50,5 |
+| Espada Rúnica | 5 | 36 | 0,55 | 14% +1%/Let. (20% com a passiva), ×1,65 | 2 a 3 | 44,7 (2) a 67,1 (3); média 55,9 |
 
 ## Onde ajustar manualmente
 Todas as linhas em `game/src/weapon_blueprints.cpp` (podem se deslocar se o arquivo mudar). "Dano" = `damage.baseDamage` e `attributeScaling`; "cadência" = `cadence.*` (a linha de `cooldownSeconds` só vale sem `baseAttacksPerSecond`); "crítico" = `critical.*`; "alcance" = tamanho da hitbox, alcance ou velocidade/distância.
@@ -55,7 +55,7 @@ Mudar `perTargetHitCooldownSeconds`, o `laser.duration` ou o giro da Rúnica mud
 ## Testes
 `game/tests/weapon_rules_tests.cpp` (`mingw32-make test`):
 - `PowerDamageMultiplier` (0 → ×1; 10 → ×1,1; negativo não inverte) e Poder aplicado uma vez ao dano derivado.
-- Faixas de DPS que travam cada arma: raridade 2 entre 18 e 23 (constantes `kRarity2MinDps`/`kRarity2MaxDps`); Broquel acima de 22,6 e abaixo de 30; Cajado entre 27 e 33; Rúnica ≥ 40 com 2 acertos e entre 45 e 55 na média de 2 e 3 acertos.
+- Faixas de DPS que travam cada arma: raridade 2 entre 18 e 23 (constantes `kRarity2MinDps`/`kRarity2MaxDps`); Broquel acima de 22,6 e abaixo de 30; Cajado entre 21 e 25; Rúnica ≥ 40 com 2 acertos e entre 50 e 60 na média de 2 e 3 acertos.
 - Consistência de acertos: 3 ticks do laser, Broquel com um acerto por batida, 3 acertos máximos por giro da Rúnica.
 
-Validar jogando: sensação de dano do Broquel (golpe lento e forte) e do Cajado (ticks de 6), e o efeito de Poder no número mostrado no inventário.
+Validar jogando: sensação de dano do Broquel (golpe lento e forte) e do Cajado (ticks de 4,5), e o efeito de Poder no número mostrado no inventário.

@@ -18,11 +18,11 @@ constexpr float kRarity2MinDps = 18.0f;
 constexpr float kRarity2MaxDps = 23.0f;
 constexpr float kBestRarity2Dps = 22.6f; // Arco Simples: o Broquel precisa ficar acima.
 constexpr float kRarity3MaxDps = 30.0f;  // Broquel fica abaixo das outras de raridade 3.
-constexpr float kStaffMinDps = 27.0f;
-constexpr float kStaffMaxDps = 33.0f;
+constexpr float kStaffMinDps = 21.0f;
+constexpr float kStaffMaxDps = 25.0f;
 constexpr float kRunicMinDpsTwoHits = 40.0f;
-constexpr float kRunicMinDpsAverage = 45.0f;
-constexpr float kRunicMaxDpsAverage = 55.0f;
+constexpr float kRunicMinDpsAverage = 50.0f;
+constexpr float kRunicMaxDpsAverage = 60.0f;
 
 // Espada Rúnica: giro de 1,6 volta a 480 graus/s, 1 acerto a cada 0,4 s por alvo.
 constexpr int kRunicMinHitsPerSpin = 2;

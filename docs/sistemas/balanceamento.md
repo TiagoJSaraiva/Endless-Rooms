@@ -97,9 +97,9 @@ Ajustes de armas (1.9a), em alvo único e atributos zerados:
 | Arma | DPS alvo | Regra |
 |---|---:|---|
 | Espada Curta, Machadinha, Arco Simples | sem mudança (18,5 a 22,6) | Já estão na curva de raridade 2 |
-| Cajado de Carvalho | ~30 | Raridade 3 |
-| Broquel | ~26 | Acima de todas as armas de raridade 2 (máx. 22,6); fica abaixo das outras de raridade 3 por causa da Defesa +5 |
-| Espada Rúnica | ~50 | Média de 2 e 3 acertos por giro; com 2 acertos, ≥ 40 |
+| Cajado de Carvalho | ~23 | Raridade 3; rebalanceado à mão pelo desenvolvedor (antes ~30) |
+| Broquel | ~26 | Acima de todas as armas de raridade 2 (máx. 22,6); compensa a Defesa +5 ficando abaixo da meta de raridade 3 (hoje o Cajado rebalanceado fica abaixo dele) |
+| Espada Rúnica | ~56 | Média de 2 e 3 acertos por giro; com 2 acertos, ≥ 40; rebalanceada à mão (antes ~50, giro 150 × 40) |
 
 Os pontos de ajuste manual de cada arma ficam documentados em `docs/sistemas/armas.md` (criada na 1.9a).
 
