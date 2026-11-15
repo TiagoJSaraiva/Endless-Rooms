@@ -235,7 +235,7 @@ void BottomWallLightOcclusion() {
     // Fonte interior logo acima da parede, recortada pela sala.
     const Rectangle clip = LightingRules::HostLightClip(room.Layout().tileBounds, true);
     const SceneLightSource interior{{wall.x + wall.width * 0.5f, wall.y - 40}, PropLight{320.0f, 0.65f, {255, 210, 140, 255}, {}},
-                                    clip, 1.0f, LightLayer::Interior};
+                                    clip, 1.0f};
     auto render = [&](const std::vector<SceneLightSource>& lights, const std::vector<LightingRules::LightOccluder>& occluders) {
         BeginTextureMode(target); ClearBackground(WHITE);
         lighting.Apply(kDungeonLevel, {{&room, 1}}, camera, renderer, 0, &target, lights, occluders);
@@ -254,12 +254,15 @@ void BottomWallLightOcclusion() {
     Expect(GetImageColor(partial, sx, wallY), Over(lit, base, 0.4f));
     UnloadImage(open); UnloadImage(blocked); UnloadImage(partial);
 
-    // A tocha da própria parede inferior é aplicada depois do oclusor e continua iluminando a parede.
+    // A tocha da própria parede inferior fica do lado da sala: ilumina o piso acima da parede,
+    // mas a face visível continua no nível ambiente.
     const auto torchLights = WallPropRendering::Lights({{&bottom, 1}}, renderer, 0);
-    assert(torchLights.size() == 1 && torchLights[0].layer == LightLayer::BottomWall);
+    assert(torchLights.size() == 1);
     const Vector2 p = torchLights[0].position;
     Image torch = render(torchLights, {{wall, 1.0f}});
-    assert(GetImageColor(torch, int(p.x), int(p.y)).r > GetImageColor(baseline, int(p.x), int(p.y)).r + 40);
+    Expect(GetImageColor(torch, int(p.x), int(p.y)), GetImageColor(baseline, int(p.x), int(p.y)));
+    Expect(GetImageColor(torch, sx, wallY), base);
+    assert(GetImageColor(torch, int(p.x), aboveY).r > GetImageColor(baseline, int(p.x), aboveY).r + 20);
     UnloadImage(torch); UnloadImage(baseline);
     lighting.Unload(); renderer.Unload();
 }

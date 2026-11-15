@@ -18,9 +18,7 @@ std::vector<SceneLightSource> Lights(const std::vector<WallPropView>& views, Pro
         const Vector2 position = renderer.SpriteLightPosition(definition.texturePath, prop.Bounds(), definition.animation,
                                                               *definition.light, elapsedSeconds + prop.animationPhase,
                                                               prop.FlipX());
-        const LightLayer layer = prop.key.section == WallRules::Section::Bottom ? LightLayer::BottomWall
-                                                                                : LightLayer::Interior;
-        result.push_back({position, *definition.light, prop.LightClip(), view.visibility, layer});
+        result.push_back({position, *definition.light, prop.LightClip(), view.visibility});
     }
     return result;
 }

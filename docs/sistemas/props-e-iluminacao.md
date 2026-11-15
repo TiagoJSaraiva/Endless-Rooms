@@ -206,16 +206,16 @@ primeiro tile junto da porta é uma transição de transparente para opaco, para
 que a porta lateral não termine num corte seco. Corredores verticais cobrem só
 o piso, sem transição. A máscara inteira some junto com a abertura da porta.
 
-A face da parede inferior fica na frente da luz de dentro da sala. Fontes
-`SceneLightSource` têm uma camada (`LightLayer`): `Interior` (props de piso,
-tochas de cima e laterais) ou `BottomWall` (tochas da parede inferior).
-`SceneLighting::Apply` aplica primeiro as `Interior`; depois os oclusores
-(`LightingRules::LightOccluder`, vindos de `WallTiles::ForegroundLightOccluders`
-e repassados por `RoomRenderer::WallLightOccluders`) devolvem ao nível
-ambiente as paredes do passe frontal, misturando pela opacidade com que foram
-desenhadas: a parede translúcida (60%) deixa passar 40% da luz de trás; por
-fim entram as `BottomWall`, que continuam iluminando a própria parede. O alpha
-do mapa de luz é preservado nesse passe, porque o multiplicativo final o usa.
+A face da parede inferior fica na frente de toda luz e mostra só a escuridão
+do bioma. Isso vale também para as tochas presas a ela, que ficam do lado da
+sala (cobertas pela parede, vistas só quando ela fica translúcida): iluminam o
+piso acima, não a face. `SceneLighting::Apply` aplica todas as fontes; depois
+os oclusores (`LightingRules::LightOccluder`, vindos de
+`WallTiles::ForegroundLightOccluders` e repassados por
+`RoomRenderer::WallLightOccluders`) devolvem ao nível ambiente as paredes do
+passe frontal, misturando pela opacidade com que foram desenhadas: a parede
+translúcida (60%) deixa passar 40% da luz de trás. O alpha do mapa de luz é
+preservado nesse passe, porque o multiplicativo final o usa.
 
 O rodapé da parede inferior (últimos 32 px) se dissolve na cor do vazio
 (`VOID_COLOR`, em `room_types.h`, a mesma do fundo e da máscara dos corredores).
@@ -264,10 +264,11 @@ de portas. A suíte de geração também verifica a integração do registro com
 `RoomManager` e sua substituição ao reiniciar. O teste gráfico compara pixels
 durante entrada e saída da translucidez da bottom, profundidade dos atores,
 os oito frames, margens transparentes, luz além do alcance da vela, recorte
-em salas/corredores (sem vazar abaixo do piso), oclusão da luz interna pela
-parede inferior opaca e translúcida e câmera com zoom. Usa janela oculta e
+em salas/corredores (sem vazar abaixo do piso), oclusão pela parede inferior
+opaca e translúcida (inclusive da luz das tochas presas a ela) e câmera com zoom. Usa janela oculta e
 assets temporários. `wall_render_tests` cobre o rodapé das paredes inferiores
-e dos cantos e a ausência dele nos acabamentos que seguem para um corredor.
+e dos cantos, a ausência dele nos acabamentos que seguem para um corredor e
+a parede inteira esmaecida junto a portas sul fechadas e a corredores ao norte.
 A prévia `game/obj/wall-props-preview.png` usa os sprites reais e os passes de
 parede e iluminação, mostrando upper, bottom opaca, bottom translúcida e um
 corredor aberto. Ambas as prévias são artefatos locais, fora do Git.
@@ -308,10 +309,12 @@ Verificação manual em `game.exe`, iniciado de `game/`:
    mostra o encaixe com os sprites reais.
 10. Junto à parede inferior de salas e corredores horizontais: a luz das
     tochas termina na borda de baixo da parede, sem faixa clara no vazio; a
-    face da parede não recebe luz de dentro da sala (só das tochas presas a
-    ela); com o jogador atrás dela, a parede translúcida deixa passar parte da
-    luz. O rodapé se dissolve no vazio, inclusive nos cantos, e as paredes de
-    um corredor ao sul seguem sem corte.
+    face da parede fica na escuridão do bioma, inclusive junto às tochas
+    presas a ela (pares das portas sul de salas especiais); com o jogador atrás
+    dela, a parede translúcida deixa passar parte da luz. O rodapé se dissolve
+    no vazio em toda a extensão, inclusive nos cantos, ao lado de portas sul
+    fechadas e sob colunas de corredores ao norte, e as paredes de um corredor
+    ao sul aberto seguem sem corte.
 11. Portas leste/oeste fechadas: a máscara cobre o corredor inteiro na
     vertical, sem tijolos aparecendo acima, e tem uma transição suave junto à
     porta; ao abrir, tudo some junto.

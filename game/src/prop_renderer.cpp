@@ -135,30 +135,27 @@ void SceneLighting::Apply(float ambientLevel,const std::vector<FloorRoomView>& r
         }
     }
     // Explicit clips keep room and corridor sources out of unrevealed neighbors.
-    auto drawLayer=[&](LightLayer layer) {
-        BeginBlendMode(BLEND_ADDITIVE);
-        for(const auto& source:sources) {
-            if(source.layer!=layer) continue;
-            if(source.visibility<=0||source.clipBounds.width<=0||source.clipBounds.height<=0) continue;
-            const Rectangle clip=WorldToScreenRect(source.clipBounds,camera);
-            BeginScissorMode(int(std::floor(clip.x)),int(std::floor(clip.y)),int(std::ceil(clip.width)),int(std::ceil(clip.height)));
-            const auto& light=source.light;
-            Vector2 center=GetWorldToScreen2D(source.position,camera);
-            float radius=std::max(0.0f,light.radius*camera.zoom);
-            Color tint=light.color;
-            float intensity=std::clamp(light.intensity*source.visibility,0.0f,1.0f);
-            tint.r=static_cast<unsigned char>(tint.r*intensity);
-            tint.g=static_cast<unsigned char>(tint.g*intensity);
-            tint.b=static_cast<unsigned char>(tint.b*intensity);
-            DrawTexturePro(gradient_,{0,0,128,128},{center.x-radius,center.y-radius,radius*2,radius*2},{0,0},0,tint);
-            EndScissorMode();
-        }
-        EndBlendMode();
-    };
-    drawLayer(LightLayer::Interior);
-    // A face da parede inferior fica na frente da luz de dentro da sala: devolve o nível ambiente
-    // a ela, misturado pela opacidade para que a parede translúcida deixe passar parte da luz.
-    // O alpha do mapa precisa continuar 1, porque o passe multiplicativo final o usa.
+    BeginBlendMode(BLEND_ADDITIVE);
+    for(const auto& source:sources) {
+        if(source.visibility<=0||source.clipBounds.width<=0||source.clipBounds.height<=0) continue;
+        const Rectangle clip=WorldToScreenRect(source.clipBounds,camera);
+        BeginScissorMode(int(std::floor(clip.x)),int(std::floor(clip.y)),int(std::ceil(clip.width)),int(std::ceil(clip.height)));
+        const auto& light=source.light;
+        Vector2 center=GetWorldToScreen2D(source.position,camera);
+        float radius=std::max(0.0f,light.radius*camera.zoom);
+        Color tint=light.color;
+        float intensity=std::clamp(light.intensity*source.visibility,0.0f,1.0f);
+        tint.r=static_cast<unsigned char>(tint.r*intensity);
+        tint.g=static_cast<unsigned char>(tint.g*intensity);
+        tint.b=static_cast<unsigned char>(tint.b*intensity);
+        DrawTexturePro(gradient_,{0,0,128,128},{center.x-radius,center.y-radius,radius*2,radius*2},{0,0},0,tint);
+        EndScissorMode();
+    }
+    EndBlendMode();
+    // A face da parede inferior fica na frente de toda luz, inclusive a das tochas presas a ela,
+    // que ficam do lado da sala: devolve o nível ambiente a ela, misturado pela opacidade para que
+    // a parede translúcida deixe passar parte da luz. O alpha do mapa precisa continuar 1, porque
+    // o passe multiplicativo final o usa.
     auto drawOccluders=[&](bool fadesDown) {
         rlSetBlendFactorsSeparate(RL_SRC_ALPHA,RL_ONE_MINUS_SRC_ALPHA,RL_ZERO,RL_ONE,RL_FUNC_ADD,RL_FUNC_ADD);
         BeginBlendMode(BLEND_CUSTOM_SEPARATE);
@@ -176,8 +173,9 @@ void SceneLighting::Apply(float ambientLevel,const std::vector<FloorRoomView>& r
         }
         EndBlendMode();
     };
+    // O rodapé vem depois das faces para levar ao ambiente também a luz que atravessa a parede
+    // translúcida.
     drawOccluders(false);
-    drawLayer(LightLayer::BottomWall);
     drawOccluders(true);
     EndTextureMode();
     if(output) BeginTextureMode(*output);
