@@ -21,7 +21,7 @@
 #
 #**************************************************************************************************
 
-.PHONY: all clean raylib_build test test-floor-render test-wall-render test-prop-render test-wall-prop-render test-reward-pouch-render
+.PHONY: all clean raylib_build web_page_assets testtest-floor-render test-wall-render test-prop-render test-wall-prop-render test-reward-pouch-render
 
 # Define required raylib variables
 PROJECT_NAME       ?= game
@@ -550,6 +550,23 @@ else
 endif
 endif
 	$(CC) -o $(GAME_OUTPUT) $(OBJS) $(WINDOWS_RESOURCE) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
+
+# Imagens e fonte da página web ficam fora do .data: a página precisa delas enquanto ele baixa.
+# A fonte é a mesma do jogo, copiada de assets/ para não duplicá-la no repositório.
+ifeq ($(PLATFORM),PLATFORM_WEB)
+$(PROJECT_NAME): web_page_assets
+endif
+
+web_page_assets:
+ifeq ($(OS),Windows_NT)
+	@cmd /C "if not exist $(WEB_OUTPUT_DIR)\assets\font mkdir $(WEB_OUTPUT_DIR)\assets\font"
+	@cmd /C "xcopy /E /I /Y /Q web\assets $(WEB_OUTPUT_DIR)\assets >NUL"
+	@cmd /C "copy /Y assets\font\alagard.ttf $(WEB_OUTPUT_DIR)\assets\font\alagard.ttf >NUL"
+else
+	@mkdir -p "$(WEB_OUTPUT_DIR)/assets/font"
+	cp -R web/assets/. "$(WEB_OUTPUT_DIR)/assets/"
+	cp assets/font/alagard.ttf "$(WEB_OUTPUT_DIR)/assets/font/alagard.ttf"
+endif
 
 # Compile source files
 # NOTE: This pattern will compile every module defined on $(OBJS)
